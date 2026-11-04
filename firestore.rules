@@ -1,0 +1,32 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{db}/documents {
+    match /games/{g} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data.host == request.auth.uid;
+      allow update: if request.auth != null && resource.data.host == request.auth.uid;
+
+      match /players/{u} {
+        allow read: if request.auth != null;
+        // everyone joins as hider; only the host can make a seeker
+        allow create: if request.auth.uid == u && request.resource.data.role == 'hider';
+        allow update: if request.auth != null && get(/databases/$(db)/documents/games/$(g)).data.host == request.auth.uid;
+      }
+      // private position: only the owner (and the server) can read it
+      match /loc/{u} {
+        allow read, write: if request.auth != null && request.auth.uid == u;
+      }
+      // live position: only seekers can publish, everyone in the game can see it
+      match /live/{u} {
+        allow read: if request.auth != null;
+        allow write: if request.auth != null && request.auth.uid == u &&
+          get(/databases/$(db)/documents/games/$(g)/players/$(u)).data.role == 'seeker';
+      }
+      // hider positions released at each ping, written only by the server
+      match /pings/{p} {
+        allow read: if request.auth != null;
+        allow write: if false;
+      }
+    }
+  }
+}
