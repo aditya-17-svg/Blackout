@@ -87,7 +87,7 @@ footer{padding:32px max(20px,5vw);color:var(--mu);font-size:13px;display:flex;ju
 <div class="rc h rv"><span class="tag yl">HIDER</span><h3>Stay unseen.</h3><p>You see the seeker on your map at all times. Use that edge to slip away before the circle shrinks.</p></div>
 <div class="rc s rv d1"><span class="tag or">SEEKER</span><h3>Wait for the ping.</h3><p>Hiders appear on your map only every few minutes. Read the clue, make your move, close in.</p></div></div></div></section>
 
-<section id="fitness" class="pad" style="background:linear-gradient(#0B0B0B,#101010)"><div class="wrap c"><p class="eyebrow rv">FITNESS, BUILT IN</p><h2 class="rv d1">Every chase is <span class="g">a workout.</span></h2>
+<section id="fitness" class="pad" ><div class="wrap c"><p class="eyebrow rv">FITNESS, BUILT IN</p><h2 class="rv d1">Every chase is <span class="g">a workout.</span></h2>
 <p class="lead rv d2">Track your timer, distance, calories, pace and altitude like a fitness app, while you play.</p>
 <div class="stats"><div class="sc rv"><b data-c="486">0</b><span>CALORIES BURNED</span></div><div class="sc rv d1"><b data-c="97" data-s="%">0</b><span>OXYGEN SpO2</span></div><div class="sc rv d2"><b data-c="312" data-s=" m">0</b><span>MAX ALTITUDE</span></div><div class="sc rv d3"><b data-c="42" data-s=" min">0</b><span>ACTIVE TIME</span></div></div>
 <div class="modes rv"><span class="a">Run</span><span>Walk</span><span>Ride</span></div></div></section>
@@ -110,4 +110,5 @@ function upd(){tick=false;const y=scrollY;nav.classList.toggle('s',y>20);
  const r=zone.getBoundingClientRect(),p=cl(-r.top/(r.height-innerHeight),0,1);
  ring.style.transform='scale('+(1-p*.78)+')';zr.textContent=Math.round(900-750*p)+' m';zs.textContent='Stage '+(Math.min(3,Math.floor(p*4))+1)+' of 4'}
 addEventListener('scroll',()=>{if(!tick){tick=true;requestAnimationFrame(upd)}},{passive:true});addEventListener('resize',upd);upd();
-</script></body></html>
+</script><script src="topo.js" defer></script>
+</body></html>
