@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B0B0B"><meta name="referrer" content="strict-origin-when-cross-origin">
+<title>Sign in – Manhunt Fitness</title>
+<style>
+:root{--bg:#0B0B0B;--card:#1A1A1A;--or:#FF7A00;--yl:#FFE135;--tx:#F5F5F5;--mu:#A8A8A8;--bad:#FF5A4F;color-scheme:dark}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--tx);font-family:-apple-system,'SF Pro Display','Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--yl);cursor:pointer}.g{background:linear-gradient(90deg,var(--or),var(--yl));-webkit-background-clip:text;background-clip:text;color:transparent}
+.shell{min-height:100dvh;display:grid;grid-template-columns:1fr 1fr;background:radial-gradient(ellipse 60% 50% at 20% 0,rgba(255,122,0,.22),transparent 70%)}
+.brand{padding:calc(32px + env(safe-area-inset-top)) clamp(24px,5vw,72px);display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;position:relative}
+.logo{font-weight:800;letter-spacing:-.02em;color:var(--tx);text-decoration:none}.logo i{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--or);margin-right:8px;box-shadow:0 0 14px var(--or)}
+.brand h2{font-size:clamp(38px,5.4vw,76px);letter-spacing:-.035em;line-height:1.03;margin:0;font-weight:800}
+.brand p{color:var(--mu);font-size:clamp(16px,1.6vw,21px);max-width:420px;line-height:1.4}
+.orb{position:absolute;right:-12%;bottom:-8%;width:min(46vw,520px);aspect-ratio:1;border-radius:50%;border:3px solid var(--or);box-shadow:0 0 90px rgba(255,122,0,.3),inset 0 0 80px rgba(255,122,0,.14);animation:sh 7s ease-in-out infinite alternate}
+.orb:after{content:"";position:absolute;inset:24%;border-radius:50%;border:2px dashed var(--yl);opacity:.7}
+@keyframes sh{to{transform:scale(.62)}}
+.panel{display:flex;align-items:center;justify-content:center;padding:calc(28px + env(safe-area-inset-top)) 20px calc(28px + env(safe-area-inset-bottom))}
+.box{width:100%;max-width:420px;background:rgba(26,26,26,.78);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border:1px solid #2a2a2a;border-radius:32px;padding:clamp(22px,4vw,36px);animation:in .8s cubic-bezier(.16,1,.3,1)}
+@keyframes in{from{opacity:0;transform:translateY(30px)}}
+.seg{position:relative;display:grid;grid-template-columns:1fr 1fr;background:#111;border-radius:980px;padding:4px;margin-bottom:22px}
+.seg button{position:relative;z-index:1;background:none;border:0;color:var(--mu);font-weight:700;font-size:14px;height:40px;border-radius:980px;cursor:pointer;transition:color .3s}.seg button.on{color:#0B0B0B}
+.seg i{position:absolute;top:4px;bottom:4px;left:4px;width:calc(50% - 4px);border-radius:980px;background:var(--or);transition:transform .45s cubic-bezier(.16,1,.3,1)}.seg.up i{transform:translateX(100%)}
+h1{font-size:30px;letter-spacing:-.03em;margin:0 0 6px}.sub{color:var(--mu);margin:0 0 20px;font-size:15px;line-height:1.4}
+label{display:block;font-size:13px;color:var(--mu);font-weight:600;margin-bottom:14px;position:relative}
+input[type=text],input[type=email],input[type=password]{display:block;width:100%;height:52px;margin-top:6px;border-radius:16px;border:1px solid #333;background:#111;color:var(--tx);padding:0 16px;font-size:16px;outline:none;transition:border-color .2s,box-shadow .2s}
+input:focus{border-color:var(--or);box-shadow:0 0 0 4px rgba(255,122,0,.18)}
+.eye{position:absolute;right:14px;top:30px;font-size:12px;color:var(--yl);cursor:pointer;user-select:none;padding:4px}
+.meter{display:flex;gap:5px;margin:-4px 0 6px}.meter i{flex:1;height:4px;border-radius:2px;background:#333;transition:background .3s}
+.mt{font-size:12px;color:var(--mu);min-height:16px;display:block;margin-bottom:10px}
+.chk{display:flex;gap:10px;align-items:flex-start;font-weight:400;line-height:1.4}.chk input{margin-top:3px;accent-color:var(--or);width:18px;height:18px;flex:none}
+.hp{position:absolute;left:-9999px;opacity:0;height:0;width:0}
+#err{color:var(--bad);font-size:14px;min-height:20px;margin:2px 0 8px}#ok{color:var(--yl);font-size:14px}
+.btn{width:100%;height:54px;border:0;border-radius:980px;background:var(--or);color:#0B0B0B;font-size:17px;font-weight:700;cursor:pointer;transition:transform .3s,box-shadow .3s,opacity .3s}
+.btn:hover:not(:disabled){transform:scale(1.02);box-shadow:0 8px 40px rgba(255,122,0,.35)}.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.o{background:transparent;color:var(--tx);box-shadow:inset 0 0 0 1.5px #3a3a3a;margin-top:0}
+.or2{display:flex;align-items:center;gap:12px;color:var(--mu);font-size:12px;margin:16px 0}.or2:before,.or2:after{content:"";flex:1;height:1px;background:#2a2a2a}
+.row{display:flex;justify-content:space-between;font-size:13px;margin-top:16px;color:var(--mu)}
+.lock{display:flex;gap:8px;align-items:center;justify-content:center;font-size:12px;color:var(--mu);margin-top:18px}
+[hidden]{display:none!important}.mail{font-size:52px;text-align:center}
+@media (max-width:860px){.shell{grid-template-columns:1fr}.brand{display:none}.panel{min-height:100dvh}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style></head><body>
+<main class="shell">
+<aside class="brand"><a class="logo" href="index.html"><i></i>Manhunt Fitness</a>
+<div><h2>Your hunt<br><span class="g">starts here.</span></h2><p>One account for your games, your stats and your friends. Secured and ready in under a minute.</p></div><div class="orb"></div></aside>
+<section class="panel"><div class="box">
+<div id="vForm">
+ <div class="seg" id="seg"><button id="tIn" class="on" type="button">Sign in</button><button id="tUp" type="button">Create account</button><i></i></div>
+ <h1 id="ttl">Welcome back</h1><p class="sub" id="sub">Sign in to join or host a game.</p>
+ <form id="f" novalidate>
+  <label id="lName" hidden>Display name<input id="name" type="text" maxlength="14" autocomplete="nickname" placeholder="What should players call you?"></label>
+  <label>Email<input id="email" type="email" autocomplete="email" inputmode="email" placeholder="you@example.com" maxlength="120"></label>
+  <label>Password<span class="eye" id="eye">Show</span><input id="pw" type="password" autocomplete="current-password" maxlength="128" placeholder="At least 10 characters"></label>
+  <div id="mWrap" hidden><div class="meter" id="meter"><i></i><i></i><i></i><i></i></div><span class="mt" id="mt"></span></div>
+  <label class="chk" id="tRow" hidden><input type="checkbox" id="terms"><span>I am 13 or older and agree to the Terms and Privacy Policy.</span></label>
+  <label class="chk" id="rRow"><input type="checkbox" id="rem" checked><span>Keep me signed in on this device</span></label>
+  <input class="hp" id="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+  <p id="err" role="alert"></p>
+  <button class="btn" id="go" type="submit">Sign in</button>
+ </form>
+ <div class="or2">or</div>
+ <button class="btn o" id="gg" type="button">Continue with Google</button>
+ <div class="row"><a id="forgot">Forgot password?</a><a href="index.html">Back to site</a></div>
+ <div class="lock">🔒 Encrypted connection · Passwords are never stored by us</div>
+</div>
+<div id="vMail" hidden>
+ <div class="mail">✉️</div><h1 style="text-align:center">Check your inbox</h1>
+ <p class="sub" style="text-align:center">We sent a verification link to <b id="mAddr"></b>. Open it, then come back here. Check spam if you can’t see it.</p>
+ <p id="ok" style="text-align:center;min-height:20px" role="status"></p>
+ <button class="btn" id="chk" type="button">I’ve verified my email</button><div style="height:10px"></div>
+ <button class="btn o" id="resend" type="button">Resend email</button>
+ <div class="row" style="justify-content:center"><a id="out">Use a different account</a></div>
+</div>
+</div></section></main>
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, sendEmailVerification, sendPasswordResetEmail, updateProfile, setPersistence, browserLocalPersistence, browserSessionPersistence, signOut } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import { firebaseConfig } from './config.js';
+const auth = getAuth(initializeApp(firebaseConfig));
+const $ = (i) => document.getElementById(i);
+let up = false, busy = false, signingUp = false;
+const GO = 'play.html';
+
+/* ---- helpers ---- */
+const say = (t) => ($('err').textContent = t || '');
+const isGoogle = (u) => u.providerData.some((p) => p.providerId === 'google.com');
+const ready = (u) => u && (u.emailVerified || isGoogle(u));
+const COMMON = ['password', '12345678', '123456789', 'qwerty', 'iloveyou', 'letmein', 'manhunt', 'welcome', 'admin'];
+function score(p) {
+  let c = 0;
+  if (/[a-z]/.test(p)) c++; if (/[A-Z]/.test(p)) c++; if (/\d/.test(p)) c++; if (/[^A-Za-z0-9]/.test(p)) c++;
+  const weak = COMMON.some((w) => p.toLowerCase().includes(w)) || /(.)\1{3,}/.test(p);
+  const lvl = p.length < 10 ? Math.min(c, 1) : weak ? 1 : Math.min(4, c + (p.length >= 14 ? 1 : 0) - (c < 3 ? 1 : 0));
+  return { lvl: Math.max(0, lvl), ok: p.length >= 10 && c >= 3 && !weak, weak };
+}
+function meter() {
+  const s = score($('pw').value), cols = ['#FF5A4F', '#FF7A00', '#FFE135', '#9BE564'];
+  [...$('meter').children].forEach((e, i) => (e.style.background = $('pw').value && i < s.lvl ? cols[s.lvl - 1] : '#333'));
+  $('mt').textContent = !$('pw').value ? '' : s.weak ? 'Too easy to guess' : s.ok ? 'Strong enough' : 'Use 10+ characters with 3 of: a-z, A-Z, 0-9, symbols';
+}
+function mode(u) {
+  up = u; say('');
+  $('seg').classList.toggle('up', u); $('tIn').classList.toggle('on', !u); $('tUp').classList.toggle('on', u);
+  $('ttl').textContent = u ? 'Create your account' : 'Welcome back';
+  $('sub').textContent = u ? 'Pick a name, set a strong password and you’re in.' : 'Sign in to join or host a game.';
+  $('go').textContent = u ? 'Create account' : 'Sign in';
+  $('lName').hidden = !u; $('mWrap').hidden = !u; $('tRow').hidden = !u; $('rRow').hidden = u; $('forgot').hidden = u;
+  $('pw').autocomplete = u ? 'new-password' : 'current-password';
+}
+$('tIn').onclick = () => mode(false); $('tUp').onclick = () => mode(true);
+$('pw').oninput = meter;
+$('eye').onclick = () => { const h = $('pw').type === 'password'; $('pw').type = h ? 'text' : 'password'; $('eye').textContent = h ? 'Hide' : 'Show'; };
+
+/* ---- client-side throttle (Firebase also rate-limits on the server) ---- */
+const LK = 'mf_lock';
+const lockLeft = () => { try { const l = JSON.parse(localStorage.getItem(LK) || '{}'); return Math.max(0, Math.ceil(((l.until || 0) - Date.now()) / 1000)); } catch { return 0; } };
+function fail() {
+  try { const l = JSON.parse(localStorage.getItem(LK) || '{}'); l.n = (l.n || 0) + 1;
+    if (l.n >= 5) { l.until = Date.now() + Math.min(900, 30 * 2 ** (l.n - 5)) * 1000; }
+    localStorage.setItem(LK, JSON.stringify(l)); } catch {}
+}
+const clearFails = () => { try { localStorage.removeItem(LK); } catch {} };
+
+const ERR = {
+  'auth/invalid-credential': 'Email or password is incorrect.', 'auth/wrong-password': 'Email or password is incorrect.', 'auth/user-not-found': 'Email or password is incorrect.',
+  'auth/email-already-in-use': 'Could not create that account. Try signing in instead.', 'auth/invalid-email': 'Enter a valid email address.',
+  'auth/weak-password': 'Choose a stronger password.', 'auth/too-many-requests': 'Too many attempts. Please wait a few minutes.', 'auth/network-request-failed': 'Network problem. Check your connection.',
+  'auth/popup-closed-by-user': '', 'auth/cancelled-popup-request': '', 'auth/popup-blocked': 'Your browser blocked the Google window. Allow pop-ups and try again.',
+};
+const msg = (e) => (e.code in ERR ? ERR[e.code] : 'Something went wrong. Please try again.');
+
+/* ---- submit ---- */
+$('f').addEventListener('submit', async (ev) => {
+  ev.preventDefault(); if (busy) return;
+  if ($('hp').value) return; // honeypot: bots fill hidden fields
+  const left = lockLeft(); if (left) return say(`Too many attempts. Try again in ${left}s.`);
+  const email = $('email').value.trim().toLowerCase(), pw = $('pw').value, name = $('name').value.trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return say('Enter a valid email address.');
+  if (up) {
+    if (name.length < 2) return say('Choose a display name (2 to 14 characters).');
+    if (!score(pw).ok) return say('Choose a stronger password.');
+    if (!$('terms').checked) return say('Please confirm the age and terms box.');
+  } else if (!pw) return say('Enter your password.');
+  busy = true; $('go').disabled = true; say('');
+  try {
+    await setPersistence(auth, $('rem').checked ? browserLocalPersistence : browserSessionPersistence);
+    if (up) {
+      signingUp = true;
+      const c = await createUserWithEmailAndPassword(auth, email, pw);
+      await updateProfile(c.user, { displayName: name.replace(/[<>]/g, '') });
+      await sendEmailVerification(c.user);
+      signingUp = false; showMail(c.user);
+    } else { await signInWithEmailAndPassword(auth, email, pw); clearFails(); }
+  } catch (e) { signingUp = false; if (!up) fail(); say(msg(e)); }
+  busy = false; $('go').disabled = false;
+});
+
+$('gg').onclick = async () => {
+  say('');
+  try { await setPersistence(auth, browserLocalPersistence); await signInWithPopup(auth, new GoogleAuthProvider()); }
+  catch (e) { say(msg(e)); }
+};
+$('forgot').onclick = async () => {
+  const email = $('email').value.trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return say('Type your email above first.');
+  try { await sendPasswordResetEmail(auth, email); } catch {}
+  say(''); $('err').style.color = 'var(--yl)'; say('If that email has an account, a reset link is on its way.');
+  setTimeout(() => ($('err').style.color = ''), 6000);
+};
+
+/* ---- email verification panel ---- */
+let cd = 0, poll;
+function showMail(u) {
+  $('vForm').hidden = true; $('vMail').hidden = false; $('mAddr').textContent = u.email;
+  startCd(); clearInterval(poll);
+  poll = setInterval(async () => { await u.reload(); if (u.emailVerified) { clearInterval(poll); location.replace(GO); } }, 4000);
+}
+function startCd() { cd = 60; const t = setInterval(() => { cd--; $('resend').textContent = cd > 0 ? `Resend email (${cd}s)` : 'Resend email'; $('resend').disabled = cd > 0; if (cd <= 0) clearInterval(t); }, 1000); $('resend').disabled = true; }
+$('resend').onclick = async () => { try { await sendEmailVerification(auth.currentUser); $('ok').textContent = 'Sent again.'; startCd(); } catch { $('ok').textContent = 'Please wait a moment and try again.'; } };
+$('chk').onclick = async () => { await auth.currentUser.reload(); if (auth.currentUser.emailVerified) location.replace(GO); else $('ok').textContent = 'Not verified yet. Open the link in your email.'; };
+$('out').onclick = async () => { clearInterval(poll); await signOut(auth); $('vMail').hidden = true; $('vForm').hidden = false; mode(false); };
+
+onAuthStateChanged(auth, (u) => {
+  if (!u || signingUp) return;
+  if (ready(u)) location.replace(GO); else showMail(u);
+});
+mode(false);
+</script></body></html>
