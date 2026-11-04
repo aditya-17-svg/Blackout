@@ -1,4 +1,4 @@
-\const { onSchedule } = require('firebase-functions/v2/scheduler');
+const { onSchedule } = require('firebase-functions/v2/scheduler');
 const admin = require('firebase-admin');
 admin.initializeApp();
 const db = admin.firestore();
