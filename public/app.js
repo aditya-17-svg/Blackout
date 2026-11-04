@@ -91,6 +91,10 @@ function startGame() {
   map = L.map('map', { zoomControl: false }).setView([game.center.lat, game.center.lng], 15);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
   zone = L.circle([game.center.lat, game.center.lng], { radius: radius(), color: '#FF7A00', weight: 4, fillOpacity: 0.04 }).addTo(map);
+  const fit = () => map.invalidateSize();
+  addEventListener('resize', fit);
+  addEventListener('orientationchange', () => setTimeout(fit, 300));
+  setTimeout(fit, 200);
 
   navigator.geolocation.watchPosition((p) => {
     me = { lat: p.coords.latitude, lng: p.coords.longitude };
