@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B0B0B">
+<title>Manhunt Fitness</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="style.css">
+</head><body>
+<div id="toast"></div>
+<section id="home" class="scr on">
+  <small>Manhunt Fitness</small>
+  <h1>Ready to <span>hunt?</span></h1>
+  <input id="name" placeholder="Your name" maxlength="14">
+  <button id="create">Create new game</button>
+  <div class="row"><input id="code" placeholder="Join code" maxlength="6"><button class="o" id="join">Join</button></div>
+</section>
+<section id="lobby" class="scr">
+  <small>Share this code</small><h1 id="lcode" class="yl"></h1>
+  <div id="plist"></div>
+  <button id="start" style="display:none">Start game</button>
+  <p class="mu" id="lhint">Waiting for the host to start...</p>
+</section>
+<section id="game" class="scr">
+  <div class="top"><span id="role" class="chip a"></span><b id="clock" class="yl"></b></div>
+  <div id="map"></div>
+  <div class="card"><div id="info"></div></div>
+  <div class="row">
+    <div class="st"><b id="tm">00:00</b><span>TIMER</span></div>
+    <div class="st"><b id="kc" class="or">0</b><span>KCAL</span></div>
+    <div class="st"><b id="ds">0</b><span>METRES</span></div>
+  </div>
+  <div id="modes"><span class="chip a" data-m="run">Run</span><span class="chip" data-m="walk">Walk</span><span class="chip" data-m="ride">Ride</span></div>
+</section>
+<script type="module" src="app.js"></script>
+</body></html>
