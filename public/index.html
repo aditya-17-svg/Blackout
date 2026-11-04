@@ -2,34 +2,112 @@
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0B0B0B">
-<title>Manhunt Fitness</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<link rel="stylesheet" href="style.css">
-</head><body>
-<div id="toast"></div>
-<section id="home" class="scr on">
-  <small>Manhunt Fitness</small>
-  <h1>Ready to <span>hunt?</span></h1>
-  <input id="name" placeholder="Your name" maxlength="14">
-  <button id="create">Create new game</button>
-  <div class="row"><input id="code" placeholder="Join code" maxlength="6"><button class="o" id="join">Join</button></div>
-</section>
-<section id="lobby" class="scr">
-  <small>Share this code</small><h1 id="lcode" class="yl"></h1>
-  <div id="plist"></div>
-  <button id="start" style="display:none">Start game</button>
-  <p class="mu" id="lhint">Waiting for the host to start...</p>
-</section>
-<section id="game" class="scr">
-  <div class="top"><span id="role" class="chip a"></span><b id="clock" class="yl"></b></div>
-  <div id="map"></div>
-  <div class="card"><div id="info"></div></div>
-  <div class="row">
-    <div class="st"><b id="tm">00:00</b><span>TIMER</span></div>
-    <div class="st"><b id="kc" class="or">0</b><span>KCAL</span></div>
-    <div class="st"><b id="ds">0</b><span>METRES</span></div>
-  </div>
-  <div id="modes"><span class="chip a" data-m="run">Run</span><span class="chip" data-m="walk">Walk</span><span class="chip" data-m="ride">Ride</span></div>
-</section>
-<script type="module" src="app.js"></script>
-</body></html>
+<title>Manhunt Fitness – Run. Hide. Hunt.</title>
+<meta name="description" content="A real-world manhunt game that tracks your workout. Play in your browser, no install.">
+<style>
+:root{--bg:#0B0B0B;--card:#1A1A1A;--or:#FF7A00;--yl:#FFE135;--tx:#F5F5F5;--mu:#A8A8A8;color-scheme:dark;scroll-behavior:smooth}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--tx);font-family:-apple-system,'SF Pro Display','Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+.g{background:linear-gradient(90deg,var(--or),var(--yl));-webkit-background-clip:text;background-clip:text;color:transparent}
+nav{position:fixed;top:0;left:0;right:0;z-index:50;height:calc(56px + env(safe-area-inset-top));padding:env(safe-area-inset-top) max(20px,5vw) 0;display:flex;align-items:center;justify-content:space-between;transition:.4s}
+nav.s{background:rgba(11,11,11,.72);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);box-shadow:0 1px 0 #222}
+.logo{font-weight:800;letter-spacing:-.02em}.logo i{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--or);margin-right:8px;box-shadow:0 0 14px var(--or)}
+nav .l{display:flex;gap:28px;font-size:13px;color:var(--mu)}nav .l a:hover{color:var(--tx)}
+.btn{display:inline-block;background:var(--or);color:#0B0B0B;font-weight:700;border-radius:980px;padding:12px 26px;font-size:16px;transition:transform .3s,box-shadow .3s}
+.btn:hover{transform:scale(1.04);box-shadow:0 8px 40px rgba(255,122,0,.4)}.btn.sm{padding:7px 16px;font-size:13px}
+.btn.o{background:transparent;color:var(--yl);box-shadow:inset 0 0 0 2px var(--yl)}
+section{position:relative}.wrap{max-width:1100px;margin:0 auto;padding:0 max(20px,5vw)}
+.eyebrow{color:var(--or);font-weight:700;font-size:clamp(14px,1.6vw,19px);letter-spacing:.02em;margin:0 0 10px}
+h1,h2{margin:0;letter-spacing:-.035em;line-height:1.03;font-weight:800}
+h1{font-size:clamp(48px,11vw,130px)}h2{font-size:clamp(34px,6.5vw,76px)}
+p.lead{font-size:clamp(18px,2.4vw,28px);color:var(--mu);line-height:1.35;max-width:760px;margin:20px auto 0;letter-spacing:-.01em}
+.c{text-align:center}
+.rv{opacity:0;transform:translateY(46px);transition:opacity 1s cubic-bezier(.16,1,.3,1),transform 1s cubic-bezier(.16,1,.3,1)}.rv.in{opacity:1;transform:none}
+.d1{transition-delay:.12s}.d2{transition-delay:.24s}.d3{transition-delay:.36s}
+/* hero */
+#hero{min-height:100svh;padding-top:calc(110px + env(safe-area-inset-top));overflow:hidden;background:radial-gradient(ellipse 70% 50% at 50% 0,rgba(255,122,0,.22),transparent 70%)}
+#hero .cta{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:30px}
+.phone{width:min(300px,72vw);aspect-ratio:402/874;margin:56px auto 0;border-radius:48px;border:7px solid #2a2a2a;background:var(--bg);position:relative;overflow:hidden;box-shadow:0 40px 120px rgba(255,122,0,.25),0 0 0 1px #3a3a3a;will-change:transform}
+.phone:before{content:"";position:absolute;top:10px;left:50%;width:30%;height:22px;border-radius:12px;background:#000;transform:translateX(-50%);z-index:3}
+.phone .ui{position:absolute;inset:0;padding:48px 12px 12px}
+.pill{display:inline-block;font-weight:800;font-size:10px;padding:4px 9px;border-radius:10px;background:var(--yl);color:#0B0B0B}
+.pmap{margin-top:10px;border-radius:20px;background:#141414;width:100%;height:60%}
+.pst{display:flex;gap:6px;margin-top:8px}.pst div{flex:1;background:var(--card);border-radius:12px;padding:8px}.pst b{display:block;color:var(--yl);font-size:15px}.pst span{font-size:7px;color:var(--mu);letter-spacing:1px}
+@keyframes pu{0%,100%{opacity:.2}50%{opacity:.7}}.pu{animation:pu 1.6s infinite}
+/* zone */
+#zone{height:320svh}.sticky{position:sticky;top:0;height:100svh;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.zv{position:relative;width:min(80vw,62vh,560px);aspect-ratio:1}
+.zv .ring{position:absolute;inset:0;border-radius:50%;border:3px solid var(--or);background:radial-gradient(circle,transparent 60%,rgba(255,122,0,.12));box-shadow:0 0 80px rgba(255,122,0,.25),inset 0 0 80px rgba(255,122,0,.12);will-change:transform}
+.zv .in2{position:absolute;inset:22%;border-radius:50%;border:2px dashed var(--yl);opacity:.7}
+.zv i{position:absolute;width:14px;height:14px;border-radius:50%}
+.zt{position:absolute;left:0;right:0;top:calc(50% - 64px);text-align:center;pointer-events:none}
+.zt b{display:block;font-size:clamp(44px,9vw,96px);letter-spacing:-.04em}.zt span{color:var(--mu);font-size:clamp(14px,2vw,20px)}
+.zhead{position:absolute;top:calc(88px + env(safe-area-inset-top));left:0;right:0}
+/* roles */
+.roles{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;margin-top:56px}
+.rc{background:var(--card);border-radius:32px;padding:clamp(26px,4vw,44px);min-height:340px;position:relative;overflow:hidden;transition:transform .5s cubic-bezier(.16,1,.3,1)}
+.rc:hover{transform:translateY(-6px) scale(1.01)}.rc h3{font-size:clamp(28px,4vw,44px);margin:0 0 10px;letter-spacing:-.03em}.rc p{color:var(--mu);font-size:clamp(16px,1.8vw,20px);line-height:1.4;margin:0}
+.rc .tag{font-weight:800;font-size:13px;letter-spacing:.08em;margin-bottom:60px;display:block}
+.rc:before{content:"";position:absolute;right:-60px;bottom:-60px;width:220px;height:220px;border-radius:50%;opacity:.9;filter:blur(2px)}
+.h:before{background:radial-gradient(circle,rgba(255,225,53,.5),transparent 70%)}.s:before{background:radial-gradient(circle,rgba(255,122,0,.55),transparent 70%)}
+/* stats */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-top:56px}
+.sc{background:var(--card);border-radius:28px;padding:28px}.sc b{display:block;font-size:clamp(40px,6vw,64px);letter-spacing:-.04em;color:var(--yl);font-variant-numeric:tabular-nums}.sc span{color:var(--mu);font-size:14px;letter-spacing:.08em}
+.modes{display:flex;gap:10px;justify-content:center;margin-top:36px;flex-wrap:wrap}.modes span{padding:10px 22px;border-radius:980px;background:var(--card);color:var(--mu);font-weight:700}.modes .a{background:var(--or);color:#0B0B0B}
+/* zones two-up */
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;margin-top:56px}
+.big{background:var(--card);border-radius:32px;padding:clamp(26px,4vw,44px);border:1px solid #262626}.big h3{margin:0 0 10px;font-size:clamp(24px,3vw,34px);letter-spacing:-.02em}.big p{margin:0;color:var(--mu);line-height:1.45;font-size:17px}
+.big svg{width:100%;height:150px;margin-top:20px;border-radius:18px;background:#141414}
+/* cta */
+#play{padding:clamp(100px,18vw,220px) 0;background:radial-gradient(ellipse 60% 60% at 50% 100%,rgba(255,122,0,.28),transparent 70%)}
+footer{padding:32px max(20px,5vw);color:var(--mu);font-size:13px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;border-top:1px solid #1d1d1d}
+.pad{padding:clamp(90px,14vw,180px) 0}
+@media (max-width:700px){nav .l{display:none}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.rv{opacity:1;transform:none}}
+</style></head><body>
+<nav id="nav"><a class="logo" href="#top"><i></i>Manhunt Fitness</a><div class="l"><a href="#zone">The zone</a><a href="#roles">Roles</a><a href="#fitness">Fitness</a><a href="#areas">Maps</a></div><a class="btn sm" href="play.html">Play now</a></nav>
+
+<section id="hero" class="c"><div class="wrap">
+<p class="eyebrow rv">THE REAL-WORLD CHASE</p>
+<h1 class="rv d1">Run. Hide.<br><span class="g">Hunt.</span></h1>
+<p class="lead rv d2">A manhunt game on a shrinking map that tracks every step, every calorie, every climb. Play right in your browser.</p>
+<div class="cta rv d3"><a class="btn" href="play.html">Start playing</a><a class="btn o" href="#zone">See how it works</a></div>
+<div class="phone rv d3" id="ph"><div class="ui"><span class="pill">HIDER</span><b class="g" style="float:right;font-size:18px">18:42</b>
+<svg class="pmap" viewBox="0 0 200 270" role="img" aria-label="Game map"><g stroke="#262626"><path d="M25 0V270M50 0V270M75 0V270M100 0V270M125 0V270M150 0V270M175 0V270M0 25H200M0 50H200M0 75H200M0 100H200M0 125H200M0 150H200M0 175H200M0 200H200M0 225H200M0 250H200"/></g><circle cx="100" cy="135" r="92" fill="none" stroke="#FF7A00" stroke-width="2.5"/><circle cx="100" cy="135" r="58" fill="none" stroke="#FFE135" stroke-width="1.5" stroke-dasharray="5 4"/><circle cx="82" cy="150" r="6" fill="#FFE135"/><circle class="pu" cx="125" cy="108" r="16" fill="#FF7A00"/><circle cx="125" cy="108" r="6" fill="#FF7A00"/></svg>
+<div class="pst"><div><b>148</b><span>BPM</span></div><div><b>486</b><span>KCAL</span></div><div><b>210m</b><span>SEEKER</span></div></div></div></div>
+</div></section>
+
+<section id="zone"><div class="sticky"><div class="zhead c wrap"><p class="eyebrow">THE ZONE</p><h2>The circle <span class="g">closes in.</span></h2></div>
+<div class="zv"><div class="ring" id="ring"></div><div class="in2"></div><i style="left:30%;top:60%;background:#FFE135"></i><i style="left:62%;top:34%;background:#FF7A00;box-shadow:0 0 24px #FF7A00"></i>
+<div class="zt"><b class="g" id="zr">900 m</b><span id="zs">Stage 1 of 4</span></div></div></div></section>
+
+<section id="roles" class="pad"><div class="wrap c"><p class="eyebrow rv">TWO ROLES</p><h2 class="rv d1">One sees all.<br>One sees <span class="g">sometimes.</span></h2>
+<div class="roles" style="text-align:left">
+<div class="rc h rv"><span class="tag yl">HIDER</span><h3>Stay unseen.</h3><p>You see the seeker on your map at all times. Use that edge to slip away before the circle shrinks.</p></div>
+<div class="rc s rv d1"><span class="tag or">SEEKER</span><h3>Wait for the ping.</h3><p>Hiders appear on your map only every few minutes. Read the clue, make your move, close in.</p></div></div></div></section>
+
+<section id="fitness" class="pad" style="background:linear-gradient(#0B0B0B,#101010)"><div class="wrap c"><p class="eyebrow rv">FITNESS, BUILT IN</p><h2 class="rv d1">Every chase is <span class="g">a workout.</span></h2>
+<p class="lead rv d2">Track your timer, distance, calories, pace and altitude like a fitness app, while you play.</p>
+<div class="stats"><div class="sc rv"><b data-c="486">0</b><span>CALORIES BURNED</span></div><div class="sc rv d1"><b data-c="97" data-s="%">0</b><span>OXYGEN SpO2</span></div><div class="sc rv d2"><b data-c="312" data-s=" m">0</b><span>MAX ALTITUDE</span></div><div class="sc rv d3"><b data-c="42" data-s=" min">0</b><span>ACTIVE TIME</span></div></div>
+<div class="modes rv"><span class="a">Run</span><span>Walk</span><span>Ride</span></div></div></section>
+
+<section id="areas" class="pad"><div class="wrap c"><p class="eyebrow rv">YOUR PLAYGROUND</p><h2 class="rv d1">Draw it. <span class="g">Or let maps decide.</span></h2>
+<div class="two" style="text-align:left">
+<div class="big rv"><h3 class="yl">Custom zones</h3><p>Draw your own play area. Mark red zones that are off limits and hide zones where you are safe.</p><svg viewBox="0 0 300 150" role="img" aria-label="Custom zones"><path d="M20 30L270 20L285 120L150 140L25 110Z" fill="none" stroke="#FFE135" stroke-width="2" stroke-dasharray="6 5"/><rect x="60" y="50" width="60" height="40" rx="8" fill="#FF7A00" fill-opacity=".3" stroke="#FF7A00"/><rect x="180" y="70" width="56" height="40" rx="8" fill="#FFE135" fill-opacity=".2" stroke="#FFE135"/></svg></div>
+<div class="big rv d1"><h3 class="or">Smart zones</h3><p>Let the map suggest an area that fits real streets, parks and city blocks. Coming soon.</p><svg viewBox="0 0 300 150" role="img" aria-label="Smart zones"><g stroke="#2e2e2e" stroke-width="6"><path d="M0 50H300M0 105H300M70 0V150M150 0V150M230 0V150"/></g><path d="M40 28L260 28L260 125L40 125Z" fill="#FF7A00" fill-opacity=".12" stroke="#FF7A00" stroke-width="2.5"/></svg></div></div></div></section>
+
+<section id="play" class="c"><div class="wrap"><h2 class="rv">No download.<br><span class="g">Just play.</span></h2><p class="lead rv d1">Open the link on any phone, share a code with friends and the hunt begins.</p><p class="rv d2" style="margin-top:34px"><a class="btn" href="play.html" style="font-size:19px;padding:16px 38px">Start playing</a></p></div></section>
+<footer><span>© 2026 Manhunt Fitness</span><span>Works on iPhone, Android and desktop browsers. Location is only used during a game.</span></footer>
+<script>
+const $=s=>document.querySelector(s),cl=(v,a,b)=>Math.min(b,Math.max(a,v)),nav=$('#nav'),ph=$('#ph'),ring=$('#ring'),zr=$('#zr'),zs=$('#zs'),zone=$('#zone');
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');e.target.querySelectorAll('[data-c]').forEach(count);io.unobserve(e.target)}}),{threshold:.15});
+document.querySelectorAll('.rv').forEach(e=>io.observe(e));
+function count(el){if(el.done)return;el.done=1;const n=+el.dataset.c,s=el.dataset.s||'',t0=performance.now();(function f(t){const p=cl((t-t0)/1600,0,1),e=1-Math.pow(1-p,4);el.textContent=Math.round(n*e)+s;if(p<1)requestAnimationFrame(f)})(t0)}
+let tick=false;
+function upd(){tick=false;const y=scrollY;nav.classList.toggle('s',y>20);
+ ph.style.transform='translateY('+Math.min(y*.12,90)+'px) scale('+(1-Math.min(y/4000,.06))+')';
+ const r=zone.getBoundingClientRect(),p=cl(-r.top/(r.height-innerHeight),0,1);
+ ring.style.transform='scale('+(1-p*.78)+')';zr.textContent=Math.round(900-750*p)+' m';zs.textContent='Stage '+(Math.min(3,Math.floor(p*4))+1)+' of 4'}
+addEventListener('scroll',()=>{if(!tick){tick=true;requestAnimationFrame(upd)}},{passive:true});addEventListener('resize',upd);upd();
+</script></body></html>
