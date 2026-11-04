@@ -1,5 +1,5 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import { getFirestore, doc, setDoc, updateDoc, getDocs, collection, query, where, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 import { firebaseConfig } from './config.js';
 
@@ -14,7 +14,19 @@ const show = (id) => document.querySelectorAll('.scr').forEach((s) => s.classLis
 const pos = () => new Promise((res, rej) => navigator.geolocation.getCurrentPosition((p) => res({ lat: p.coords.latitude, lng: p.coords.longitude }), rej, { enableHighAccuracy: true }));
 const gref = (...p) => doc(db, 'games', gid, ...p);
 
-signInAnonymously(getAuth(app)).then((c) => { uid = c.user.uid; }).catch(() => toast('Sign-in failed. Check Firebase setup'));
+const auth = getAuth(app);
+onAuthStateChanged(auth, (u) => {
+  const ok = u && (u.emailVerified || u.providerData.some((p) => p.providerId === 'google.com'));
+  if (!ok) return location.replace('auth.html'); // not signed in or not verified
+  uid = u.uid;
+  if (u.displayName) $('name').value = u.displayName;
+  if (!$('so')) {
+    const b = document.createElement('button');
+    b.id = 'so'; b.className = 'o'; b.textContent = 'Sign out';
+    b.onclick = () => signOut(auth).then(() => location.replace('auth.html'));
+    $('home').appendChild(b);
+  }
+});
 
 document.querySelectorAll('[data-m]').forEach((c) => (c.onclick = () => {
   mode = c.dataset.m;
