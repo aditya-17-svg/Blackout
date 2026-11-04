@@ -92,7 +92,7 @@ function radius() {
   return S[i] + (S[n] - S[i]) * Math.min(1, (into - start) / game.shrinkSec);
 }
 
-const dot = (ll, color) => L.circleMarker(ll, { radius: 9, color, fillColor: color, fillOpacity: 1, weight: 2 }).addTo(map);
+const dot = (ll, color) => L.marker(ll, { icon: L.divIcon({ className: 'puck', html: '<i style="background:' + color + '"></i>', iconSize: [24, 24] }) }).addTo(map);
 const clear = () => { others.forEach((m) => m.remove()); others = []; };
 
 function startGame() {
@@ -101,7 +101,32 @@ function startGame() {
   $('role').textContent = role.toUpperCase();
   $('role').style.background = role === 'seeker' ? 'var(--or)' : 'var(--yl)';
   map = L.map('map', { zoomControl: false }).setView([game.center.lat, game.center.lng], 15);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
+  // Apple Maps-style basemaps (free tiles). Tap the round button to switch.
+  const BASES = {
+    Standard: ['https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { subdomains: 'abcd', maxZoom: 20, attribution: '&copy; OpenStreetMap &copy; CARTO' }, '#E9E7E1'],
+    Dark: ['https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { subdomains: 'abcd', maxZoom: 20, attribution: '&copy; OpenStreetMap &copy; CARTO' }, '#1C1C1E'],
+    Satellite: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Imagery &copy; Esri' }, '#222'],
+  };
+  const names = Object.keys(BASES);
+  let cur = 'Standard', layer;
+  try { const sv = localStorage.getItem('mf_map'); if (BASES[sv]) cur = sv; } catch (e) {}
+  const setBase = (n) => {
+    cur = n; if (layer) layer.remove();
+    layer = L.tileLayer(BASES[n][0], BASES[n][1]).addTo(map); layer.bringToBack();
+    map.getContainer().style.background = BASES[n][2];
+    try { localStorage.setItem('mf_map', n); } catch (e) {}
+  };
+  setBase(cur);
+  const ctl = L.control({ position: 'topright' });
+  ctl.onAdd = () => {
+    const btn = L.DomUtil.create('button', 'mapbtn');
+    btn.type = 'button'; btn.setAttribute('aria-label', 'Change map style');
+    btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3 3 8l9 5 9-5-9-5Z"/><path d="m3 13 9 5 9-5"/></svg>';
+    L.DomEvent.disableClickPropagation(btn);
+    btn.onclick = () => { const n = names[(names.indexOf(cur) + 1) % names.length]; setBase(n); toast(n + ' map'); };
+    return btn;
+  };
+  ctl.addTo(map);
   zone = L.circle([game.center.lat, game.center.lng], { radius: radius(), color: '#FF7A00', weight: 4, fillOpacity: 0.04 }).addTo(map);
   const fit = () => map.invalidateSize();
   addEventListener('resize', fit);
