@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>Manhunt Fitness</title>
+<style>
+:root{--bg:#0B0B0B;--card:#1A1A1A;--or:#FF7A00;--yl:#FFE135;--tx:#F5F5F5;--mu:#A8A8A8;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:dark}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--tx);font-family:-apple-system,'SF Pro Text','Segoe UI',Roboto,Arial,sans-serif}
+#app{max-width:440px;margin:0 auto;padding:18px 16px 96px;position:relative}
+.scr{display:none}.scr.on{display:block}
+h1{font-size:32px;margin:4px 0 16px;font-weight:900}h1 span,.yl{color:var(--yl)}.or{color:var(--or)}.mu{color:var(--mu)}
+.card{background:var(--card);border-radius:22px;padding:16px;margin-bottom:12px}
+.row{display:flex;gap:10px}.row>*{flex:1}
+.st{background:var(--card);border-radius:18px;padding:12px 14px}.st b{display:block;font-size:24px;font-weight:800;color:var(--yl)}.st span{font-size:11px;letter-spacing:1px;color:var(--mu)}
+button{border:0;border-radius:28px;height:54px;width:100%;font-size:17px;font-weight:800;background:var(--or);color:#0B0B0B;cursor:pointer;font-family:inherit}
+button.o{background:transparent;border:2px solid var(--yl);color:var(--yl)}
+.chip{display:inline-block;height:auto;width:auto;padding:8px 16px;font-size:13px;border-radius:18px;background:var(--card);color:var(--mu);margin:0 6px 8px 0}.chip.a{background:var(--or);color:#0B0B0B}
+canvas{width:100%;aspect-ratio:362/470;border-radius:24px;background:#141414;display:block;touch-action:none}
+.tab{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));width:min(408px,calc(100% - 24px));height:60px;border-radius:30px;background:var(--card);display:flex;align-items:center;justify-content:space-around;z-index:5;box-shadow:0 0 0 1px #2a2a2a}
+.tab a{font-size:13px;font-weight:700;padding:10px 18px;border-radius:22px;color:var(--mu);cursor:pointer}.tab a.a{background:var(--or);color:#0B0B0B}
+#toast{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));left:50%;transform:translate(-50%,-80px);background:var(--or);color:#0B0B0B;font-weight:800;padding:12px 18px;border-radius:18px;z-index:9;transition:.35s;max-width:90%;text-align:center}#toast.on{transform:translate(-50%,0)}
+#end{position:fixed;inset:0;background:rgba(11,11,11,.94);z-index:8;display:none;align-items:center;justify-content:center;text-align:center;padding:24px}#end.on{display:flex}
+small{color:var(--mu)}
+</style></head><body><div id="app">
+<div id="toast"></div>
+<div id="end"><div style="max-width:340px;width:100%"><div class="chip a" id="eTag">GAME OVER</div><h1 id="eTitle" class="yl" style="font-size:40px"></h1><p class="mu" id="eSub"></p><div class="row"><div class="st"><b id="eD">0</b><span>METRES</span></div><div class="st"><b id="eK" class="or">0</b><span>KCAL</span></div></div><br><button id="eBtn">Play again</button></div></div>
+
+<div class="scr on" id="home"><small>Web prototype · works on any phone browser</small><h1>Ready to <span>hunt?</span></h1>
+<div class="card" style="border:1px solid var(--or)"><div class="or" style="font-size:12px;font-weight:800;letter-spacing:1px">QUICK MATCH</div><div style="font-size:22px;font-weight:800;margin:8px 0 4px">Sector Showdown</div><div class="mu" style="font-size:13px">2.5 min demo · circle shrinks in 4 stages · pings every 20 s</div></div>
+<div class="mu" style="font-size:13px;margin:6px 0">Choose your role</div>
+<div><span class="chip a" id="rH">Hider</span><span class="chip" id="rS">Seeker</span></div>
+<div class="mu" style="font-size:13px;margin:6px 0">Activity</div>
+<div id="modes"><span class="chip a" data-m="run">Run</span><span class="chip" data-m="walk">Walk</span><span class="chip" data-m="ride">Ride</span></div>
+<button id="go" style="margin-top:8px">Start game</button>
+<p class="mu" style="font-size:13px;line-height:1.5">Hider: you see the seeker live, survive to the end. Seeker: you only see hiders at each ping, tag them all. Tap the map to move, or switch on real GPS in the game.</p></div>
+
+<div class="scr" id="game"><div style="display:flex;justify-content:space-between;align-items:center"><span class="chip a" id="role" style="margin:0">HIDER</span><b id="clock" class="yl" style="font-size:30px">2:30</b></div>
+<div class="mu" id="sub" style="font-size:12px;margin:8px 0 10px"></div>
+<canvas id="cv"></canvas>
+<div class="card" style="margin-top:12px;padding:12px 16px"><div id="info" style="font-weight:800;font-size:17px"></div><div id="bar" style="height:8px;border-radius:4px;background:#333;margin-top:8px;overflow:hidden"><i id="bi" style="display:block;height:100%;width:0;background:var(--or)"></i></div></div>
+<div class="row"><div class="st"><b id="gd">0 m</b><span>DISTANCE</span></div><div class="st"><b id="gk" class="or">0</b><span>KCAL</span></div></div>
+<div class="row" style="margin-top:10px"><button class="o" id="gps" style="height:46px">Use real GPS</button><button id="tag" style="height:46px;display:none">Tag nearby hider</button></div></div>
+
+<div class="scr" id="stats"><div class="or" style="font-size:12px;font-weight:800;letter-spacing:1px">LIVE ACTIVITY</div><div id="at" class="yl" style="font-size:64px;font-weight:900;margin:4px 0 8px">00:00:00</div>
+<div id="m2"><span class="chip a" data-m="run">Run</span><span class="chip" data-m="walk">Walk</span><span class="chip" data-m="ride">Ride</span></div>
+<div class="row"><div class="st"><b class="or" id="sk">0</b><span>KCAL</span></div><div class="st"><b id="ss">--</b><span>OXYGEN SpO2</span></div></div>
+<div class="row" style="margin-top:10px"><div class="st"><b id="sa">--</b><span>MAX ALTITUDE</span></div><div class="st"><b class="or" id="sp">--</b><span>PACE /KM</span></div></div>
+<div class="card" style="margin-top:12px"><small>Oxygen needs a wearable. Browsers can read Bluetooth heart-rate straps, but not Apple Watch or Garmin data; that needs the native app or a server link later. Altitude uses GPS when available.</small></div></div>
+
+<div class="tab"><a class="a" data-s="home">Play</a><a data-s="game">Map</a><a data-s="stats">Stats</a></div>
+</div>
+<script>
+const $=i=>document.getElementById(i),R=Math.random;
+const MET={run:9.8,walk:3.8,ride:7.5};
+let mode='run',role='hider',run=false,t=0,me,tgt,bots=[],pings=[],nextPing=20,dist=0,outT=0,useGps=false,origin=null,wid=null,maxAlt=null,last=0;
+const DUR=150,STAGES=[420,290,180,100],LEN=DUR/4,SHR=10;
+const radius=()=>{const i=Math.min(3,Math.floor(t/LEN)),n=Math.min(3,i+1),into=t-i*LEN,s=LEN-SHR;return into<=s||i==n?STAGES[i]:STAGES[i]+(STAGES[n]-STAGES[i])*((into-s)/SHR)};
+function toast(m){const e=$('toast');e.textContent=m;e.classList.add('on');setTimeout(()=>e.classList.remove('on'),2200)}
+function scr(n){document.querySelectorAll('.scr').forEach(e=>e.classList.toggle('on',e.id==n));document.querySelectorAll('.tab a').forEach(a=>a.classList.toggle('a',a.dataset.s==n))}
+document.querySelectorAll('.tab a').forEach(a=>a.onclick=()=>scr(a.dataset.s));
+function setMode(m){mode=m;document.querySelectorAll('[data-m]').forEach(c=>c.classList.toggle('a',c.dataset.m==m))}
+document.querySelectorAll('[data-m]').forEach(c=>c.onclick=()=>setMode(c.dataset.m));
+$('rH').onclick=()=>{role='hider';$('rH').classList.add('a');$('rS').classList.remove('a')};
+$('rS').onclick=()=>{role='seeker';$('rS').classList.add('a');$('rH').classList.remove('a')};
+const hms=s=>[Math.floor(s/3600),Math.floor(s/60)%60,Math.floor(s)%60].map(n=>String(n).padStart(2,'0')).join(':');
+function start(){t=0;dist=0;outT=0;nextPing=20;pings=[];me={x:0,y:0};tgt=null;origin=null;maxAlt=null;run=true;
+ const a=()=>{const g=R()*6.28,d=100+R()*150;return {x:Math.cos(g)*d,y:Math.sin(g)*d,tx:0,ty:0,tt:0,tagged:false}};
+ bots=role=='hider'?[a()]:[a(),a()];$('role').textContent=role.toUpperCase();$('role').className='chip a';$('role').style.background=role=='hider'?'var(--yl)':'var(--or)';
+ $('tag').style.display=role=='seeker'?'block':'none';scr('game');last=performance.now();requestAnimationFrame(loop);toast(role=='hider'?'Run! Stay inside the circle':'Hunt! Pings show hiders every 20 s')}
+$('go').onclick=start;
+function end(win,title,sub){run=false;$('eTitle').textContent=title;$('eSub').textContent=sub;$('eD').textContent=Math.round(dist);$('eK').textContent=Math.round(MET[mode]*70*t/3600);$('end').classList.add('on')}
+$('eBtn').onclick=()=>{$('end').classList.remove('on');scr('home')};
+const cv=$('cv'),cx=cv.getContext('2d');
+function sz(){const d=devicePixelRatio||1,r=cv.getBoundingClientRect();cv.width=r.width*d;cv.height=r.height*d;cx.setTransform(d,0,0,d,0,0)}
+addEventListener('resize',sz);
+const W=()=>cv.getBoundingClientRect().width,Hh=()=>cv.getBoundingClientRect().height,S=()=>Math.min(W(),Hh())/2/450;
+const sx=x=>W()/2+x*S(),sy=y=>Hh()/2+y*S();
+cv.addEventListener('pointerdown',e=>{if(useGps||!run)return;const r=cv.getBoundingClientRect();tgt={x:(e.clientX-r.left-W()/2)/S(),y:(e.clientY-r.top-Hh()/2)/S()}});
+$('gps').onclick=()=>{if(useGps){useGps=false;navigator.geolocation.clearWatch(wid);$('gps').textContent='Use real GPS';return}
+ if(!navigator.geolocation){toast('GPS not available here');return}
+ try{wid=navigator.geolocation.watchPosition(p=>{useGps=true;$('gps').textContent='GPS on (tap to stop)';const c=p.coords;if(!origin)origin={la:c.latitude,lo:c.longitude};
+  const ox=me.x,oy=me.y;me.x=(c.longitude-origin.lo)*111320*Math.cos(origin.la*Math.PI/180);me.y=-(c.latitude-origin.la)*110540;if(run)dist+=Math.hypot(me.x-ox,me.y-oy);if(c.altitude!=null)maxAlt=Math.max(maxAlt??-1e9,c.altitude)},()=>toast('GPS blocked. Allow location, or play with taps'),{enableHighAccuracy:true})}catch(e){toast('GPS failed')}};
+function step(o,tx,ty,sp,dt){const dx=tx-o.x,dy=ty-o.y,d=Math.hypot(dx,dy);if(d>1){o.x+=dx/d*Math.min(sp*dt,d);o.y+=dy/d*Math.min(sp*dt,d)}return d}
+function tagTry(){let n=0;bots.forEach(b=>{if(!b.tagged&&Math.hypot(b.x-me.x,b.y-me.y)<25){b.tagged=true;n++}});if(n){toast('Tagged!');if(bots.every(b=>b.tagged))end(true,'Seeker wins!','All hiders tagged in '+Math.round(t)+' s')}else toast('No hider within 25 m')}
+$('tag').onclick=tagTry;
+function loop(now){if(!run)return;const dt=Math.min(.1,(now-last)/1000);last=now;t+=dt;const r=radius();
+ if(!useGps&&tgt){const px=me.x,py=me.y;const d=step(me,tgt.x,tgt.y,role=='hider'?6:5,dt);dist+=Math.hypot(me.x-px,me.y-py);if(d<2)tgt=null}
+ else if(useGps){/* distance from gps handled via position changes */}
+ bots.forEach(b=>{if(b.tagged)return;if(role=='hider'){step(b,me.x,me.y,4.6+t/60,dt)}else{b.tt-=dt;if(b.tt<=0){const g=R()*6.28,d=R()*(r-30);b.tx=Math.cos(g)*d;b.ty=Math.sin(g)*d;b.tt=3+R()*3}step(b,b.tx,b.ty,3,dt)}});
+ if(role=='hider'&&Math.hypot(bots[0].x-me.x,bots[0].y-me.y)<14)return end(false,'Caught!','The seeker got you after '+Math.round(t)+' s');
+ if(Math.hypot(me.x,me.y)>r){outT+=dt;if(outT>8)return end(false,'Out of zone','You stayed outside the circle too long')}else outT=Math.max(0,outT-dt);
+ if(role=='seeker'){nextPing-=dt;if(nextPing<=0){nextPing=20;pings=bots.filter(b=>!b.tagged).map(b=>({x:b.x,y:b.y}));toast('PING! Hiders located')}}
+ if(t>=DUR)return role=='hider'?end(true,'Hiders win!','You survived the final circle'):end(false,'Time up','Hiders escaped this time');
+ draw(r);hud(r);requestAnimationFrame(loop)}
+function draw(r){sz();cx.clearRect(0,0,W(),Hh());cx.strokeStyle='#262626';cx.lineWidth=1;for(let g=-450;g<=450;g+=50){cx.beginPath();cx.moveTo(sx(g),0);cx.lineTo(sx(g),Hh());cx.moveTo(0,sy(g));cx.lineTo(W(),sy(g));cx.stroke()}
+ cx.fillStyle='rgba(255,122,0,.07)';cx.beginPath();cx.rect(0,0,W(),Hh());cx.arc(sx(0),sy(0),r*S(),0,6.28,true);cx.fill();
+ cx.strokeStyle='#FF7A00';cx.lineWidth=3;cx.beginPath();cx.arc(sx(0),sy(0),r*S(),0,6.28);cx.stroke();
+ cx.strokeStyle='#FFE135';cx.setLineDash([8,6]);cx.lineWidth=2;cx.beginPath();cx.arc(sx(0),sy(0),Math.max(10,(r-70))*S(),0,6.28);cx.stroke();cx.setLineDash([]);
+ const dot=(x,y,c,rr)=>{cx.fillStyle=c;cx.beginPath();cx.arc(sx(x),sy(y),rr,0,6.28);cx.fill()};
+ if(role=='hider'){bots.forEach(b=>{cx.fillStyle='rgba(255,122,0,.22)';cx.beginPath();cx.arc(sx(b.x),sy(b.y),20,0,6.28);cx.fill();dot(b.x,b.y,'#FF7A00',8)});dot(me.x,me.y,'#FFE135',9)}
+ else{bots.forEach(b=>{if(b.tagged)dot(b.x,b.y,'#555',6)});pings.forEach(p=>{cx.strokeStyle='#FFE135';cx.lineWidth=2;cx.beginPath();cx.arc(sx(p.x),sy(p.y),22*(1+(20-nextPing)*0.01),0,6.28);cx.stroke();dot(p.x,p.y,'#FFE135',8)});dot(me.x,me.y,'#FF7A00',9)}}
+function hud(r){const rem=Math.max(0,DUR-t);$('clock').textContent=Math.floor(rem/60)+':'+String(Math.floor(rem%60)).padStart(2,'0');
+ const ns=LEN-(t%LEN);$('sub').textContent='Circle '+Math.round(r)+' m · next shrink in '+Math.ceil(ns)+' s'+(outT>0?' · OUTSIDE '+(8-outT).toFixed(0)+' s':'');
+ if(role=='hider'){const d=Math.hypot(bots[0].x-me.x,bots[0].y-me.y);$('info').innerHTML='<span class="or">SEEKER LIVE</span> · '+Math.round(d)+' m away';$('bi').style.width=Math.max(0,100-d/3)+'%'}
+ else{$('info').innerHTML='<span class="yl">NEXT PING</span> in '+Math.ceil(nextPing)+' s · hiders left '+bots.filter(b=>!b.tagged).length;$('bi').style.width=(100-nextPing/20*100)+'%'}
+ const k=Math.round(MET[mode]*70*t/3600);$('gd').textContent=Math.round(dist)+' m';$('gk').textContent=k;$('at').textContent=hms(t);$('sk').textContent=k;
+ $('sa').textContent=maxAlt!=null?Math.round(maxAlt)+' m':'--';$('sp').textContent=dist>20?(function(){const s=t/(dist/1000);return Math.floor(s/60)+"'"+String(Math.floor(s%60)).padStart(2,'0')+'"'})():'--'}
+sz();
+</script></body></html>
