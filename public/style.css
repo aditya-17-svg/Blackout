@@ -69,3 +69,17 @@ button:hover{filter:brightness(1.08)}
   #game{max-width:1700px}
   #game.on{grid-template-columns:minmax(0,1fr) 440px}
 }
+
+/* ---------- rules, sheets, banners, results ---------- */
+.rg{display:block;margin:14px 0 0;font-size:14px;color:var(--mu);font-weight:600}.rg span{display:flex;justify-content:space-between}.rg b{color:var(--yl)}
+.rg input[type=range]{width:100%;margin:10px 0 0;accent-color:var(--orange,#FF7A00);height:28px}
+.rg.chk{display:flex;gap:10px;align-items:center}.rg.chk input{width:20px;height:20px;margin:0;accent-color:#FF7A00}
+#prev{display:block;width:150px;height:150px;margin:10px auto 0}
+#rulesBox.ro input[type=range],#rulesBox.ro input[type=checkbox]{pointer-events:none;opacity:.55}
+.banner{display:none;background:#FF7A00;color:#0B0B0B;font-weight:800;padding:10px 14px;border-radius:16px;margin-bottom:10px;text-align:center}.banner.on{display:block}.banner.y{background:#FFE135}
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9000;display:none;align-items:flex-end;justify-content:center}.sheet.on{display:flex}
+.sheet .in{width:100%;max-width:440px;background:#1A1A1A;border-radius:28px 28px 0 0;padding:22px 18px calc(22px + env(safe-area-inset-bottom));animation:up .35s cubic-bezier(.16,1,.3,1)}
+@keyframes up{from{transform:translateY(100%)}}
+.sheet h2{margin:0 0 6px;font-size:22px}.sheet p{color:#A8A8A8;margin:0 0 14px}
+.c{text-align:center}
+.er{display:flex;justify-content:space-between;padding:8px 0;font-weight:700;border-bottom:1px solid #262626}.er:last-child{border:0}
