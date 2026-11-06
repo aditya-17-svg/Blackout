@@ -1,13 +1,14 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8">
+<html lang="en"><head>
+<script src="theme.js"></script><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0B0B0B">
-<link rel="icon" href="favicon.svg" type="image/svg+xml">
-<link rel="icon" href="favicon.ico" sizes="any">
+<meta name="theme-color" content="var(--bg)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2215%22 fill=%22%232A1A0E%22/%3E%3Ccircle cx=%2232%22 cy=%2232%22 r=%2222%22 fill=%22none%22 stroke=%22%23D4621A%22 stroke-width=%224.5%22/%3E%3Ccircle cx=%2232%22 cy=%2232%22 r=%2212.5%22 fill=%22none%22 stroke=%22%23F4AE52%22 stroke-width=%223%22 stroke-dasharray=%225 4%22/%3E%3Ccircle cx=%2232%22 cy=%2232%22 r=%224.6%22 fill=%22%23D4621A%22/%3E%3Ccircle cx=%2243.5%22 cy=%2221%22 r=%223.4%22 fill=%22%23FEF3E2%22/%3E%3C/svg%3E" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>Manhunt Fitness</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="theme.css">
 </head><body>
 <div id="toast"></div>
 <div id="sheet" class="sheet"><div class="in" id="sheetIn"></div></div>
@@ -25,7 +26,7 @@
   <div id="plist"></div>
   <div class="card" id="rulesBox">
     <div class="or" style="font-size:12px;letter-spacing:1px">GAME RULES</div>
-    <svg id="prev" viewBox="0 0 200 200" role="img" aria-label="Zone preview"><circle cx="100" cy="100" r="96" fill="#141414"/><circle id="pOut" cx="100" cy="100" r="60" fill="rgba(255,122,0,.08)" stroke="#FF7A00" stroke-width="3"/><circle id="pIn" cx="100" cy="100" r="20" fill="none" stroke="#FFE135" stroke-width="2" stroke-dasharray="6 5"/></svg>
+    <svg id="prev" viewBox="0 0 200 200" role="img" aria-label="Zone preview"><circle cx="100" cy="100" r="96" fill="var(--inp)"/><circle id="pOut" cx="100" cy="100" r="60" fill="rgba(212,98,26,.08)" stroke="var(--or)" stroke-width="3"/><circle id="pIn" cx="100" cy="100" r="20" fill="none" stroke="var(--yl)" stroke-width="2" stroke-dasharray="6 5"/></svg>
     <label class="rg"><span>Round length <b id="v-round"></b></span><input type="range" id="r-round" min="5" max="180" step="5"></label>
     <label class="rg"><span>Ping every <b id="v-ping"></b></span><input type="range" id="r-ping" min="0" max="30" step="1"></label>
     <label class="rg"><span>Head start <b id="v-head"></b></span><input type="range" id="r-head" min="0" max="30" step="1"></label>
