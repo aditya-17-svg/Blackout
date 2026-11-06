@@ -59,7 +59,7 @@ async function enter() {
 }
 $('share').onclick = async () => {
   const url = location.origin + '/play.html?code=' + game.code;
-  try { if (navigator.share) await navigator.share({ title: 'Join my Manhunt game', text: 'Code ' + game.code, url }); else { await navigator.clipboard.writeText(url); toast('Invite link copied'); } } catch (e) {}
+  try { if (navigator.share) await navigator.share({ title: 'Join my Blackout game', text: 'Code ' + game.code, url }); else { await navigator.clipboard.writeText(url); toast('Invite link copied'); } } catch (e) {}
 };
 
 /* ---------- lobby + host rules ---------- */
