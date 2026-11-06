@@ -13,10 +13,11 @@ exports.pingTick = onSchedule('every 1 minutes', async () => {
     const players = await g.ref.collection('players').where('role', '==', 'hider').get();
     const hiders = [];
     for (const p of players.docs) {
+      if (p.data().status === 'tagged') continue; // tagged runners are out and no longer pinged
       const loc = await g.ref.collection('loc').doc(p.id).get();
       if (loc.exists) hiders.push({ lat: loc.data().lat, lng: loc.data().lng });
     }
     await g.ref.collection('pings').doc('latest').set({ t: now, hiders });
-    await g.ref.update({ nextPingAt: now + data.pingSec * 1000 });
+    if (data.pingSec > 0) await g.ref.update({ nextPingAt: now + data.pingSec * 1000 });
   }
 });
