@@ -69,12 +69,14 @@ button.btn.o{background:transparent;color:var(--ylt);box-shadow:inset 0 0 0 2px 
 <script>
 const $=i=>document.getElementById(i),R=Math.random,A='#F4AE52',B='#D4621A',D='#2A1A0E';
 const DUR=150,LEN=DUR/4,SHR=10,ST=[420,290,180,100],FINAL=ST[3],MLAT=110540;
+const Q=new URLSearchParams(location.search),MET={run:9.8,walk:3.8,ride:7.5}[Q.get('mode')]||9.8;
 let role='hider',map,layer,c0,MLNG,zone,me={x:0,y:0},tgt=null,bots=[],run=false,t=0,last=0,dist=0,outT=0,nextPing=20,mk={},pm=[];
 const ll=(x,y)=>[c0[0]+y/MLAT,c0[1]+x/MLNG],xy=(p)=>({x:(p.lng-c0[1])*MLNG,y:(p.lat-c0[0])*MLAT});
 const toast=m=>{const e=$('toast');e.textContent=m;e.classList.add('on');setTimeout(()=>e.classList.remove('on'),2300)};
 const show=n=>document.querySelectorAll('.scr').forEach(s=>s.classList.toggle('on',s.id===n));
 const mmss=s=>{s=Math.max(0,Math.ceil(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
 document.querySelectorAll('.role').forEach(b=>b.onclick=()=>{role=b.dataset.r;document.querySelectorAll('.role').forEach(x=>x.classList.toggle('on',x===b))});
+if(Q.get('role')==='seeker'){role='seeker';document.querySelectorAll('.role').forEach(x=>x.classList.toggle('on',x.dataset.r==='seeker'))}
 const radius=()=>{const i=Math.min(3,Math.floor(t/LEN)),n=Math.min(3,i+1),into=t-i*LEN,s=LEN-SHR;return into<=s||i===n?ST[i]:ST[i]+(ST[n]-ST[i])*((into-s)/SHR)};
 const puck=(p,c)=>L.marker(p,{icon:L.divIcon({className:'puck',html:'<i style="background:'+c+'"></i>',iconSize:[22,22]}),interactive:false}).addTo(map);
 const BASES={light:'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',dark:'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'};
@@ -104,7 +106,7 @@ function begin(){MLNG=111320*Math.cos(c0[0]*Math.PI/180);show('game');
  setTimeout(()=>map.invalidateSize(),150);run=true;last=performance.now();requestAnimationFrame(loop);
  toast(role==='hider'?'Tap the map to run. Stay inside the circle.':'Tap the map to move. Pings show hiders every 20 s.')}
 function step(o,tx,ty,sp,dt){const dx=tx-o.x,dy=ty-o.y,d=Math.hypot(dx,dy);if(d>.5){const m=Math.min(sp*dt,d);o.x+=dx/d*m;o.y+=dy/d*m}return d}
-function end(win,title,sub){run=false;$('eTitle').textContent=title;$('eSub').textContent=sub;$('eTag').textContent=win?'VICTORY':'ROUND OVER';$('eD').textContent=Math.round(dist);$('eK').textContent=Math.round(9.8*70*t/3600);$('end').classList.add('on')}
+function end(win,title,sub){run=false;$('eTitle').textContent=title;$('eSub').textContent=sub;$('eTag').textContent=win?'VICTORY':'ROUND OVER';$('eD').textContent=Math.round(dist);$('eK').textContent=Math.round(MET*70*t/3600);$('end').classList.add('on')}
 $('again').onclick=()=>{$('end').classList.remove('on');show('pick')};
 $('tag').onclick=()=>{let n=0;bots.forEach(b=>{if(!b.tagged&&Math.hypot(b.x-me.x,b.y-me.y)<25){b.tagged=true;n++}});if(n){toast('Tagged!');if(bots.every(b=>b.tagged))end(true,'Seeker wins!','All hiders tagged in '+Math.round(t)+' s')}else toast('No hider within 25 m')};
 function zoneTimer(){ // PUBG-style countdown
@@ -121,7 +123,7 @@ function loop(now){if(!run)return;const dt=Math.min(.1,(now-last)/1000);last=now
  if(t>=DUR)return role==='hider'?end(true,'Hiders win!','You survived the final circle'):end(false,'Time up','The hiders escaped this time');
  zone.setRadius(r);mk.me.setLatLng(ll(me.x,me.y));
  if(role==='hider')mk.bots.forEach((m,i)=>m.setLatLng(ll(bots[i].x,bots[i].y)));else mk.bots.forEach((m,i)=>{if(bots[i].tagged)m.getElement().style.display='none'});
- const rem=DUR-t;$('clock').textContent=mmss(rem);$('gt').textContent=String(Math.floor(t/60)).padStart(2,'0')+':'+String(Math.floor(t%60)).padStart(2,'0');$('gd').textContent=Math.round(dist)+' m';$('gk').textContent=Math.round(9.8*70*t/3600);
+ const rem=DUR-t;$('clock').textContent=mmss(rem);$('gt').textContent=String(Math.floor(t/60)).padStart(2,'0')+':'+String(Math.floor(t%60)).padStart(2,'0');$('gd').textContent=Math.round(dist)+' m';$('gk').textContent=Math.round(MET*70*t/3600);
  const zp=$('zpill');if(zp){const[c,h]=zoneTimer();zp.className='zpill'+c;zp.innerHTML=h}
  $('info').innerHTML=role==='hider'?'<span style="color:var(--ort)">SEEKER LIVE</span> · '+Math.round(Math.hypot(bots[0].x-me.x,bots[0].y-me.y))+' m away'+(outT>0?' · outside '+Math.ceil(8-outT)+' s':''):'<span style="color:var(--ylt)">NEXT PING</span> in '+Math.ceil(nextPing)+' s · hiders left '+bots.filter(b=>!b.tagged).length;
  requestAnimationFrame(loop)}
