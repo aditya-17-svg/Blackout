@@ -1,11 +1,44 @@
 <!doctype html>
-<html lang="en" data-theme="light"><head><script src="theme.js"></script>
+<html lang="en" data-theme="light"><head><script>/* Light / dark mode + button ripples. Load in <head> so the theme is set before the page paints. */
+(function () {
+  var K = 'mf_theme', r = document.documentElement, t, btn;
+  try { t = localStorage.getItem(K); } catch (e) {}
+  if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  r.setAttribute('data-theme', t);
+  function paint() {
+    var m = document.querySelector('meta[name=theme-color]'); if (m) m.content = t === 'light' ? '#FEF3E2' : '#2A1A0E';
+    if (btn) btn.setAttribute('aria-label', 'Switch to ' + (t === 'dark' ? 'light' : 'dark') + ' mode');
+  }
+  function set(n) {
+    t = n; r.classList.add('tswap'); r.setAttribute('data-theme', n);
+    try { localStorage.setItem(K, n); } catch (e) {}
+    paint(); document.dispatchEvent(new CustomEvent('themechange', { detail: n }));
+    setTimeout(function () { r.classList.remove('tswap'); }, 600);
+  }
+  window.mfTheme = { get: function () { return t; } };
+  addEventListener('storage', function (e) { if (e.key === K && (e.newValue === 'light' || e.newValue === 'dark') && e.newValue !== t) set(e.newValue); });
+  document.addEventListener('DOMContentLoaded', function () {
+    btn = document.createElement('button'); btn.type = 'button'; btn.className = 'tg';
+    btn.innerHTML = '<span class="k"></span><svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>';
+    btn.onclick = function () { set(t === 'dark' ? 'light' : 'dark'); };
+    var slot = document.getElementById('themeSlot');
+    if (slot) slot.appendChild(btn); else { btn.classList.add('fl'); document.body.appendChild(btn); }
+    paint();
+  });
+  document.addEventListener('pointerdown', function (e) {
+    var el = e.target.closest && e.target.closest('button,.btn,.chip,.tab a,.q,.role'); if (!el || el.disabled) return;
+    var b = el.getBoundingClientRect(), s = Math.max(b.width, b.height) * 2.2, d = document.createElement('span');
+    d.className = 'rip'; d.style.cssText = 'width:' + s + 'px;height:' + s + 'px;left:' + (e.clientX - b.left - s / 2) + 'px;top:' + (e.clientY - b.top - s / 2) + 'px';
+    el.appendChild(d); setTimeout(function () { d.remove(); }, 700);
+  }, { passive: true });
+})();
+</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FEF3E2">
 <title>Blackout – Run. Hide. Hunt.</title>
 <meta name="description" content="Blackout is a real-world hide-and-seek game on a shrinking map. Play in your browser, no download.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2215%22 fill=%22%232A1A0E%22/%3E%3Ccircle cx=%2232%22 cy=%2232%22 r=%2222%22 fill=%22none%22 stroke=%22%23D4621A%22 stroke-width=%224.5%22/%3E%3Ccircle cx=%2232%22 cy=%2232%22 r=%2212.5%22 fill=%22none%22 stroke=%22%23F4AE52%22 stroke-width=%223%22 stroke-dasharray=%225 4%22/%3E%3Ccircle cx=%2232%22 cy=%2232%22 r=%224.6%22 fill=%22%23D4621A%22/%3E%3Ccircle cx=%2243.5%22 cy=%2221%22 r=%223.4%22 fill=%22%23FEF3E2%22/%3E%3C/svg%3E" type="image/svg+xml">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2215%22 fill=%22%232A1A0E%22/%3E%3Cpath fill-rule=%22evenodd%22 fill=%22%23F4AE52%22 transform=%22translate(-1 8) scale(.78)%22 d=%22M11 14H27C34 14 38 18 38 23.5C38 28 35.5 30.5 32 31.5C36.5 32.5 40 35.5 40 41C40 47 35.5 50 28 50H11ZM19 20.5V27.5H26C29.5 27.5 31 26 31 24C31 22 29.5 20.5 26 20.5ZM19 34.5V43.5H27C31 43.5 32.5 42 32.5 39C32.5 36 31 34.5 27 34.5Z%22/%3E%3Ccircle cx=%2245.5%22 cy=%2233%22 r=%2210%22 fill=%22none%22 stroke=%22%23D4621A%22 stroke-width=%227%22/%3E%3C/svg%3E" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
@@ -102,7 +135,7 @@ header{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--bg) 8
 .ft .mono{color:#CDB99D}.ft .sm{display:flex;flex-direction:column;align-items:flex-start;gap:14px}
 .ft .mid{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;border-top:1px solid rgba(254,243,226,.18);padding:30px 0}.ft .mid p{font-size:13px;color:#CDB99D;max-width:44ch;margin:10px 0 0}
 .ft .lk{display:flex;gap:28px;font-size:13.5px;align-items:flex-start}.ft .lk a:hover{color:var(--A)}
-.big{display:flex;justify-content:space-between;align-items:flex-end;gap:20px}.big b{font:400 clamp(56px,23vw,330px)/.78 var(--fh);letter-spacing:-.01em;text-transform:none;margin-bottom:-.06em}.big .mono{text-align:right;padding-bottom:30px;line-height:1.9}
+.big{display:block;padding-bottom:clamp(18px,3vw,40px)}.big .mono{text-align:right;padding:6px 0 18px;line-height:1.9;white-space:nowrap}.big b{display:block;font:400 clamp(48px,20.5vw,256px)/1 var(--fh);letter-spacing:-.01em;text-transform:none;white-space:nowrap}
 /* demo modal */
 .modal{position:fixed;inset:0;z-index:200;background:rgba(21,11,5,.72);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:16px;opacity:0;pointer-events:none;transition:opacity .4s}
 .modal.open{opacity:1;pointer-events:auto}.mbox{position:relative;width:min(430px,100%);height:min(880px,100%);background:var(--bg);border-radius:18px;overflow:hidden;transform:translateY(40px) scale(.97);transition:transform .55s cubic-bezier(.16,1,.3,1);box-shadow:0 40px 100px rgba(0,0,0,.5)}.modal.open .mbox{transform:none}
@@ -113,7 +146,7 @@ header{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--bg) 8
 @media (prefers-reduced-motion:reduce){.rv{opacity:1;transform:none}.rg,.pls{animation:none}}
 </style></head><body>
 <svg width="0" height="0" style="position:absolute"><symbol id="ar" viewBox="0 0 24 24"><path d="M7 17 17 7M8 7h9v9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"/></symbol></svg>
-<header><div class="wrap nav"><a class="logo" href="#top"><svg width="26" height="26" viewBox="0 0 26 26" fill="none"><path d="M21 7.5A9 9 0 1 0 21 18.5" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/><circle cx="21" cy="13" r="2.4" fill="var(--B)"/></svg>Blackout</a>
+<header><div class="wrap nav"><a class="logo" href="#top"><svg width="34" height="34" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="15" fill="#2A1A0E"/><path fill-rule="evenodd" fill="#F4AE52" transform="translate(-1 8) scale(.78)" d="M11 14H27C34 14 38 18 38 23.5C38 28 35.5 30.5 32 31.5C36.5 32.5 40 35.5 40 41C40 47 35.5 50 28 50H11ZM19 20.5V27.5H26C29.5 27.5 31 26 31 24C31 22 29.5 20.5 26 20.5ZM19 34.5V43.5H27C31 43.5 32.5 42 32.5 39C32.5 36 31 34.5 27 34.5Z"/><circle cx="45.5" cy="33" r="10" fill="none" stroke="#D4621A" stroke-width="7"/></svg>Blackout</a>
 <nav class="nl"><a href="#zone">The game</a><a href="#roles">The roles</a><a href="#playground">Your playground</a><a href="#faq">Q&amp;A</a></nav>
 <a class="btn" href="play.html">Start playing <svg class="ar"><use href="#ar"/></svg></a></div>
 <div class="strip"><span><b id="mname">Daylight Chase</b><span class="mono" id="mtag" style="display:inline">SPORT / DAY MODE</span></span><span id="themeSlot"></span></div></header>
@@ -184,7 +217,7 @@ header{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--bg) 8
 
 <footer class="ft"><div class="wrap"><div class="top"><div><p class="eb">THE STREETS ARE YOUR PLAYGROUND.</p><h2>The next move<br>is yours.</h2></div><div class="sm"><a class="btn" href="play.html">Start playing <svg class="ar"><use href="#ar"/></svg></a><p class="mono">NO DOWNLOAD. JUST THE CHASE.</p></div></div>
 <div class="mid"><div><p class="eb" style="margin:0">PLAY HARD. PLAY SAFE.</p><p>Respect boundaries, traffic and the people around you. Choose safe, permitted areas and stay aware of your surroundings.</p></div><div class="lk"><a href="#zone">The game</a><a href="#demo">Try the demo</a><a href="#faq">Q&amp;A</a></div></div>
-<div class="big"><b>Blackout</b><p class="mono">A REAL-WORLD HIDE-AND-SEEK GAME<br>© 2026 BLACKOUT / <span id="fm">DAYLIGHT CHASE</span></p></div></div></footer>
+<div class="big"><p class="mono">A REAL-WORLD HIDE-AND-SEEK GAME<br>© 2026 BLACKOUT / <span id="fm">DAYLIGHT CHASE</span></p><b>Blackout</b></div></div></footer>
 
 <div class="modal" id="dmod" aria-hidden="true"><div class="mbox"><button class="mx" type="button" aria-label="Close demo">×</button><iframe id="dfr" title="Blackout live demo" allow="geolocation"></iframe></div></div>
 <script>
@@ -211,5 +244,32 @@ $('sd').onclick=openDemo;mod.querySelector('.mx').onclick=closeDemo;mod.onclick=
 function lab(){const l=mfTheme.get()==='light';$('mname').textContent=l?'Daylight Chase':'Night Chase';$('mtag').textContent=l?'SPORT / DAY MODE':'SPORT / NIGHT MODE';$('fm').textContent=l?'DAYLIGHT CHASE':'NIGHT CHASE'}
 document.addEventListener('themechange',lab);lab();
 </script>
-<link rel="stylesheet" href="theme.css">
+<style>/* Palette: cream #FEF3E2 · amber #F4AE52 · burnt orange #D4621A · dark brown #2A1A0E */
+:root[data-theme="dark"]{--bg:#2A1A0E;--card:#38251A;--inp:#21130A;--line:rgba(254,243,226,.16);--tx:#FEF3E2;--mu:#D2BFA5;--or:#F4AE52;--yl:#D4621A;--ort:#E8803A;--ylt:#F4AE52;--onp:#2A1A0E;--bad:#FF9A78;color-scheme:dark}
+:root[data-theme="light"]{--bg:#FEF3E2;--card:#FFF9F1;--inp:#FFFFFF;--line:rgba(42,26,14,.16);--tx:#2A1A0E;--mu:#6B5443;--or:#F4AE52;--yl:#D4621A;--ort:#A94A10;--ylt:#8A5A12;--onp:#2A1A0E;--bad:#B3261E;color-scheme:light}
+html{background:var(--bg)}
+.tswap,.tswap *{transition:background-color .5s ease,color .5s ease,border-color .5s ease,fill .5s ease,stroke .5s ease,box-shadow .5s ease!important}
+
+/* theme switch */
+.tg{all:unset;box-sizing:border-box;position:relative;width:58px;height:32px;border-radius:99px;background:var(--card);box-shadow:inset 0 0 0 1.5px var(--line);cursor:pointer;display:inline-flex;align-items:center;justify-content:space-between;padding:0 8px;color:var(--mu);flex:none;transition:transform .4s cubic-bezier(.34,1.56,.64,1),box-shadow .3s!important}
+.tg svg{width:15px;height:15px;position:relative;z-index:1;transition:color .3s}
+.tg .k{position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:var(--or);box-shadow:0 2px 8px rgba(42,26,14,.35);transition:transform .5s cubic-bezier(.34,1.56,.64,1)}
+:root[data-theme="dark"] .tg .k{transform:translateX(26px)}
+:root[data-theme="light"] .tg svg.sun,:root[data-theme="dark"] .tg svg.moon{color:var(--onp)}
+.tg:hover{transform:scale(1.06)}.tg:active{transform:scale(.92)}.tg:focus-visible{outline:2px solid var(--yl);outline-offset:3px}
+.tg.fl{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));right:14px;z-index:9998}
+
+/* smooth, springy buttons with a ripple */
+button,.btn,.chip,.tab a,.q,.mapbtn,.role{position:relative;overflow:hidden;-webkit-tap-highlight-color:transparent;transition:transform .45s cubic-bezier(.34,1.56,.64,1),box-shadow .4s ease,background-color .3s ease,color .3s ease,filter .3s ease,opacity .3s ease!important}
+@media (hover:hover){
+  .btn:hover,button:not(.q):not(.mapbtn):not(.tg):not(:disabled):hover,.chip:hover,.role:hover{transform:translateY(-2px) scale(1.03)!important;box-shadow:0 12px 30px color-mix(in srgb,var(--yl) 38%,transparent)}
+  .tab a:hover{transform:translateY(-1px)}
+}
+.btn:active,button:not(.q):not(.tg):not(:disabled):active,.chip:active,.role:active,.tab a:active{transform:scale(.94)!important;transition-duration:.12s!important;box-shadow:none}
+button:disabled{cursor:not-allowed}
+.rip{position:absolute;border-radius:50%;background:currentColor;opacity:.28;transform:scale(0);animation:rip .65s cubic-bezier(.2,.7,.3,1) forwards;pointer-events:none}
+@keyframes rip{to{transform:scale(1);opacity:0}}
+:focus-visible{outline:2px solid var(--yl);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important}.btn:hover,button:hover{transform:none!important}}
+</style>
 </body></html>
