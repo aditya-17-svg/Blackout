@@ -2,6 +2,9 @@
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0B0B0B">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>Manhunt Fitness – Run. Hide. Hunt.</title>
 <meta name="description" content="A real-world manhunt game that tracks your workout. Play in your browser, no install.">
 <style>
@@ -63,10 +66,32 @@ p.lead{font-size:clamp(18px,2.4vw,28px);color:var(--mu);line-height:1.35;max-wid
 #play{padding:clamp(100px,18vw,220px) 0;background:radial-gradient(ellipse 60% 60% at 50% 100%,rgba(255,122,0,.28),transparent 70%)}
 footer{padding:32px max(20px,5vw);color:var(--mu);font-size:13px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;border-top:1px solid #1d1d1d}
 .pad{padding:clamp(90px,14vw,180px) 0}
+/* demo */
+.demo{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:clamp(30px,6vw,80px);align-items:center;margin-top:56px;text-align:left}
+.dphone{width:min(340px,82vw);aspect-ratio:9/18.5;border-radius:48px;border:7px solid #2a2a2a;background:var(--bg);overflow:hidden;position:relative;box-shadow:0 40px 120px rgba(255,122,0,.22),0 0 0 1px #3a3a3a;margin:0 auto}
+.dphone:before{content:"";position:absolute;top:10px;left:50%;width:30%;height:20px;border-radius:12px;background:#000;transform:translateX(-50%);z-index:3}
+.dphone iframe{width:100%;height:100%;border:0;display:block;background:var(--bg)}
+.dl{list-style:none;padding:0;margin:26px 0 30px;display:grid;gap:14px}
+.dl li{display:flex;gap:14px;align-items:flex-start;font-size:clamp(16px,1.8vw,20px);line-height:1.4;color:var(--mu)}
+.dl b{flex:none;width:34px;height:34px;border-radius:50%;background:var(--card);color:var(--or);display:flex;align-items:center;justify-content:center;font-size:15px;box-shadow:inset 0 0 0 1.5px var(--or)}
+.dl li span{color:var(--tx)}
+.dbtns{display:flex;gap:12px;flex-wrap:wrap}
+@media (max-width:860px){.demo{grid-template-columns:1fr}.dphone{order:-1}}
+/* q&a */
+.faq{max-width:820px;margin:56px auto 0;text-align:left;display:grid;gap:12px}
+.qa{background:var(--card);border-radius:24px;border:1px solid #262626;overflow:hidden;transition:border-color .4s,background .4s}
+.qa.open{border-color:rgba(255,122,0,.55);background:#1d1d1d}
+.q{all:unset;box-sizing:border-box;width:100%;display:flex;justify-content:space-between;align-items:center;gap:16px;padding:22px 26px;cursor:pointer;font-size:clamp(17px,2vw,21px);font-weight:700;letter-spacing:-.01em}
+.q:focus-visible{outline:2px solid var(--yl);outline-offset:-4px;border-radius:24px}
+.q i{flex:none;width:30px;height:30px;border-radius:50%;background:#262626;position:relative;transition:transform .5s cubic-bezier(.16,1,.3,1),background .3s}
+.q i:before,.q i:after{content:"";position:absolute;left:50%;top:50%;width:12px;height:2px;background:var(--tx);transform:translate(-50%,-50%);border-radius:1px}.q i:after{transform:translate(-50%,-50%) rotate(90deg);transition:transform .4s}
+.qa.open .q i{background:var(--or);transform:rotate(180deg)}.qa.open .q i:before,.qa.open .q i:after{background:#0B0B0B}.qa.open .q i:after{transform:translate(-50%,-50%) rotate(0)}
+.ans{display:grid;grid-template-rows:0fr;transition:grid-template-rows .55s cubic-bezier(.16,1,.3,1)}.qa.open .ans{grid-template-rows:1fr}
+.ans>div{overflow:hidden}.ans p{margin:0;padding:0 26px 24px;color:var(--mu);font-size:clamp(16px,1.7vw,18px);line-height:1.55}
 @media (max-width:700px){nav .l{display:none}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.rv{opacity:1;transform:none}}
 </style></head><body>
-<nav id="nav"><a class="logo" href="#top"><i></i>Manhunt Fitness</a><div class="l"><a href="#zone">The zone</a><a href="#roles">Roles</a><a href="#fitness">Fitness</a><a href="#areas">Maps</a></div><a class="btn sm" href="play.html">Play now</a></nav>
+<nav id="nav"><a class="logo" href="#top"><i></i>Manhunt Fitness</a><div class="l"><a href="#zone">The zone</a><a href="#roles">Roles</a><a href="#fitness">Fitness</a><a href="#areas">Maps</a><a href="#demo">Demo</a><a href="#faq">Q&amp;A</a></div><a class="btn sm" href="play.html">Play now</a></nav>
 
 <section id="hero" class="c"><div class="wrap">
 <p class="eyebrow rv">THE REAL-WORLD CHASE</p>
@@ -97,6 +122,15 @@ footer{padding:32px max(20px,5vw);color:var(--mu);font-size:13px;display:flex;ju
 <div class="big rv"><h3 class="yl">Custom zones</h3><p>Draw your own play area. Mark red zones that are off limits and hide zones where you are safe.</p><svg viewBox="0 0 300 150" role="img" aria-label="Custom zones"><path d="M20 30L270 20L285 120L150 140L25 110Z" fill="none" stroke="#FFE135" stroke-width="2" stroke-dasharray="6 5"/><rect x="60" y="50" width="60" height="40" rx="8" fill="#FF7A00" fill-opacity=".3" stroke="#FF7A00"/><rect x="180" y="70" width="56" height="40" rx="8" fill="#FFE135" fill-opacity=".2" stroke="#FFE135"/></svg></div>
 <div class="big rv d1"><h3 class="or">Smart zones</h3><p>Let the map suggest an area that fits real streets, parks and city blocks. Coming soon.</p><svg viewBox="0 0 300 150" role="img" aria-label="Smart zones"><g stroke="#2e2e2e" stroke-width="6"><path d="M0 50H300M0 105H300M70 0V150M150 0V150M230 0V150"/></g><path d="M40 28L260 28L260 125L40 125Z" fill="#FF7A00" fill-opacity=".12" stroke="#FF7A00" stroke-width="2.5"/></svg></div></div></div></section>
 
+<section id="demo" class="pad"><div class="wrap c"><p class="eyebrow rv">TRY IT NOW</p><h2 class="rv d1">Play a round <span class="g">right here.</span></h2>
+<p class="lead rv d2">A short live demo against computer players. No sign-up, nothing to install.</p>
+<div class="demo"><div class="rv"><ul class="dl"><li><b>1</b><div><span>Pick Hider or Seeker</span><br>Choose your side, then press Start game.</div></li><li><b>2</b><div><span>Tap the map to move</span><br>Stay inside the shrinking circle.</div></li><li><b>3</b><div><span>Watch the ping</span><br>Seekers see runners only every 20 seconds.</div></li><li><b>4</b><div><span>Check your stats</span><br>Distance, pace and calories update live.</div></li></ul>
+<div class="dbtns"><a class="btn" href="demo.html">Open full screen</a><a class="btn o" href="play.html">Play with friends</a></div></div>
+<div class="dphone rv d1"><iframe src="demo.html" title="Manhunt Fitness live demo" loading="lazy"></iframe></div></div></div></section>
+
+<section id="faq" class="pad"><div class="wrap c"><p class="eyebrow rv">Q&amp;A</p><h2 class="rv d1">Questions, <span class="g">answered.</span></h2>
+<div class="faq rv d2" id="faqList"><div class="qa open"><button class="q" type="button" aria-expanded="true">How do I play?<i></i></button><div class="ans"><div><p>One person hosts and shares a six-letter code or invite link. Everyone joins, the host picks the seekers, and the rest become runners. Runners get a head start to hide, then the seekers hunt while the circle shrinks and pushes everyone together.</p></div></div></div><div class="qa"><button class="q" type="button" aria-expanded="false">Do I need to install anything?<i></i></button><div class="ans"><div><p>No. The game runs in your phone’s browser on iPhone, Android and desktop. Just open the link, sign in and allow location when asked.</p></div></div></div><div class="qa"><button class="q" type="button" aria-expanded="false">How do pings work?<i></i></button><div class="ans"><div><p>Runners can see the seekers on their map at all times. Seekers only see where runners are at each ping, which the host sets, for example every 5 minutes. In between, they have to work it out.</p></div></div></div><div class="qa"><button class="q" type="button" aria-expanded="false">How does tagging work?<i></i></button><div class="ans"><div><p>When a seeker reaches a runner, they tap Tag and choose that runner’s name. The runner gets a prompt on their own phone and confirms or disputes it, so nobody can be tagged by mistake.</p></div></div></div><div class="qa"><button class="q" type="button" aria-expanded="false">What happens if I leave the zone?<i></i></button><div class="ans"><div><p>You get a warning and a countdown. If you stay outside the circle for two minutes, you are counted as tagged. The circle shrinks during the round, so keep an eye on it.</p></div></div></div><div class="qa"><button class="q" type="button" aria-expanded="false">Is my location private?<i></i></button><div class="ans"><div><p>Your position is only used during a round. Runners’ locations stay hidden from seekers except at pings, and tagged players stop sharing completely. Nothing is shared when you are not in a game.</p></div></div></div><div class="qa"><button class="q" type="button" aria-expanded="false">Does it track my workout?<i></i></button><div class="ans"><div><p>Yes. You get a live timer, distance, pace and estimated calories, with Run, Walk and Ride modes. Oxygen and altitude need a compatible device, and smartwatch sync is on the way.</p></div></div></div><div class="qa"><button class="q" type="button" aria-expanded="false">Is it safe, and who can play?<i></i></button><div class="ans"><div><p>Players must be 13 or older, and under-18s should have a parent’s permission. Stay off roads, keep out of private property, play in daylight with friends, and never chase anyone into danger. The game is not worth an accident.</p></div></div></div></div></div></section>
+
 <section id="play" class="c"><div class="wrap"><h2 class="rv">No download.<br><span class="g">Just play.</span></h2><p class="lead rv d1">Open the link on any phone, share a code with friends and the hunt begins.</p><p class="rv d2" style="margin-top:34px"><a class="btn" href="play.html" style="font-size:19px;padding:16px 38px">Start playing</a></p></div></section>
 <footer><span>© 2026 Manhunt Fitness</span><span>Works on iPhone, Android and desktop browsers. Location is only used during a game.</span></footer>
 <script>
@@ -110,5 +144,6 @@ function upd(){tick=false;const y=scrollY;nav.classList.toggle('s',y>20);
  const r=zone.getBoundingClientRect(),p=cl(-r.top/(r.height-innerHeight),0,1);
  ring.style.transform='scale('+(1-p*.78)+')';zr.textContent=Math.round(900-750*p)+' m';zs.textContent='Stage '+(Math.min(3,Math.floor(p*4))+1)+' of 4'}
 addEventListener('scroll',()=>{if(!tick){tick=true;requestAnimationFrame(upd)}},{passive:true});addEventListener('resize',upd);upd();
+document.querySelectorAll('#faqList .q').forEach(b=>b.addEventListener('click',()=>{const q=b.parentElement,o=q.classList.toggle('open');b.setAttribute('aria-expanded',o)}));
 </script><script src="topo.js" defer></script>
 </body></html>
