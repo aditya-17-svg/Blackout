@@ -1,14 +1,14 @@
 /* Stylised San Francisco map background in a GTA V-like palette, with highlighted blocks.
    Add <script src="topo.js" defer></script> to any page. Edit PAL to change the colours. */
 (function () {
-  const PAL = {
-    water: '#2b4657', shore: '#7ea6ba', land: '#3d3a33', blockMin: 0x55, blockMax: 0x63,
-    park: '#4d5b46', hill: '#4a463c', blvd: '#8d867a', freeway: '#d9d0ae', casing: '#26241f', bridge: '#e3a63f',
-    hi: ['#FF7A00', '#FFE135', '#FF3B30'],
+  const THEMES = {
+    dark: { water: '#1B0F07', shore: '#F4AE52', land: '#2F1D10', blockA: [0x4a, 0x31, 0x1d], blockB: [0x5a, 0x3b, 0x24], park: '#4a3b1f', hill: '#3b2616', blvd: '#8a6a4a', freeway: '#FEF3E2', casing: '#1B0F07', bridge: '#F4AE52', label: 'rgba(254,243,226,.16)', hi: ['#F4AE52', '#D4621A', '#FEF3E2'], scrim: '42,26,14', scrimA: 0.62 },
+    light: { water: '#EBCB9C', shore: '#D4621A', land: '#F6DDB8', blockA: [0xfb, 0xea, 0xcf], blockB: [0xf3, 0xd8, 0xb0], park: '#E6C98F', hill: '#EBCFA3', blvd: '#FFFBF3', freeway: '#D4621A', casing: '#F6DDB8', bridge: '#D4621A', label: 'rgba(42,26,14,.2)', hi: ['#D4621A', '#F4AE52', '#A94A10'], scrim: '254,243,226', scrimA: 0.66 },
   };
+  let PAL = THEMES[document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark'];
   const SEED = 5, W0 = 1000, H0 = 640, GAP = 1.7;
   const css = document.createElement('style');
-  css.textContent = 'html{background:#0B0B0B}body{background:transparent!important}' +
+  css.textContent = 'html{background:var(--bg)}body{background:transparent!important}' +
     '#topo{position:fixed;left:-12%;top:-12%;width:124%;height:124%;z-index:-1;pointer-events:none;will-change:transform;' +
     '-webkit-mask-image:radial-gradient(ellipse 105% 100% at 55% 45%,#000 55%,transparent 100%);mask-image:radial-gradient(ellipse 105% 100% at 55% 45%,#000 55%,transparent 100%)}' +
     '@media (prefers-reduced-motion:no-preference){#topo{animation:topoDrift 90s ease-in-out infinite alternate}}' +
@@ -71,8 +71,8 @@
         const lx = i * bw, ly = j * bh, mx = lx + bw / 2, my = ly + bh / 2;
         const wx = cx0 + ca * mx - sa * my, wy = cy0 + sa * mx + ca * my;
         if (wx < -20 || wx > W0 + 20 || wy < -20 || wy > H0 + 20 || !test(wx, wy)) continue;
-        const v = Math.round(PAL.blockMin + (PAL.blockMax - PAL.blockMin) * h(wx * 0.37, wy * 0.53));
-        g.fillStyle = 'rgb(' + v + ',' + (v - 4) + ',' + (v - 14) + ')';
+        const m = h(wx * 0.37, wy * 0.53), A = PAL.blockA, B = PAL.blockB;
+        g.fillStyle = 'rgb(' + Math.round(A[0] + (B[0] - A[0]) * m) + ',' + Math.round(A[1] + (B[1] - A[1]) * m) + ',' + Math.round(A[2] + (B[2] - A[2]) * m) + ')';
         g.save(); g.translate(cx0, cy0); g.rotate(ang); g.fillRect(lx + GAP / 2, ly + GAP / 2, bw - GAP, bh - GAP); g.restore();
         if (free(wx, wy)) {
           const p = fbm(wx * 0.011, wy * 0.011) > 0.66 ? 0.2 : 0.004, c = h(wx * 3.1, wy * 1.3);
@@ -84,7 +84,7 @@
     grid(0.72, 8, 6, 590, 250, 24, (x, y) => pip(x, y, SOMA) && pip(x, y, SF));
     grid(0.12, 10, 8, 940, 320, 80, (x, y) => pip(x, y, EAST));
     g.fillStyle = PAL.hill; [...HILLS, MARIN].forEach((p) => { path(p); g.fill(); });
-    g.strokeStyle = 'rgba(255,255,255,.06)'; g.lineWidth = 0.8;
+    g.strokeStyle = PAL.label.replace(/[\d.]+\)$/, '.08)'); g.lineWidth = 0.8;
     [...HILLS, MARIN].forEach((p) => { const cx = p.reduce((a, q) => a + q[0], 0) / p.length, cy = p.reduce((a, q) => a + q[1], 0) / p.length; for (let k = 1; k < 4; k++) { path(p.map((q) => [cx + (q[0] - cx) * (1 - k * 0.22), cy + (q[1] - cy) * (1 - k * 0.22)])); g.stroke(); } });
     g.fillStyle = PAL.park; PARKS.forEach((p) => { path(p); g.fill(); });
     const line = (pts) => { g.beginPath(); g.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length - 1; i++) { const m = [(pts[i][0] + pts[i + 1][0]) / 2, (pts[i][1] + pts[i + 1][1]) / 2]; g.quadraticCurveTo(pts[i][0], pts[i][1], m[0], m[1]); } g.lineTo(pts[pts.length - 1][0], pts[pts.length - 1][1]); g.stroke(); };
@@ -102,7 +102,7 @@
     g.strokeStyle = PAL.casing; g.lineWidth = 8; line([[214, 150], [208, 104]]);
     g.strokeStyle = PAL.bridge; g.lineWidth = 4.6; line([[214, 150], [208, 104]]); // Golden Gate Bridge
     // labels
-    g.fillStyle = 'rgba(255,255,255,.16)'; g.font = 'italic 800 20px Arial Black, Arial, sans-serif'; g.textAlign = 'center';
+    g.fillStyle = PAL.label; g.font = 'italic 800 20px Arial Black, Arial, sans-serif'; g.textAlign = 'center';
     g.fillText('SAN FRANCISCO', 440, 440); g.font = 'italic 800 14px Arial, sans-serif';
     g.fillText('PACIFIC OCEAN', 62, 330); g.fillText('SAN FRANCISCO BAY', 790, 160); g.fillText('OAKLAND', 940, 430); g.fillText('MARIN', 300, 55);
     // highlighted blocks (orange, yellow, red)
@@ -110,9 +110,10 @@
     // soft dark scrim in the middle so page text stays readable
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     const sc = g.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.max(W, H) * 0.5);
-    sc.addColorStop(0, 'rgba(11,11,11,.62)'); sc.addColorStop(0.6, 'rgba(11,11,11,.3)'); sc.addColorStop(1, 'rgba(11,11,11,0)');
+    sc.addColorStop(0, 'rgba(' + PAL.scrim + ',' + PAL.scrimA + ')'); sc.addColorStop(0.6, 'rgba(' + PAL.scrim + ',' + PAL.scrimA / 2 + ')'); sc.addColorStop(1, 'rgba(' + PAL.scrim + ',0)');
     g.fillStyle = sc; g.fillRect(0, 0, W, H);
   }
+  document.addEventListener('themechange', (e) => { PAL = THEMES[e.detail === 'light' ? 'light' : 'dark']; draw(); });
   let t; addEventListener('resize', () => { clearTimeout(t); t = setTimeout(draw, 200); }); draw();
   let tick = false;
   addEventListener('scroll', () => { if (tick) return; tick = true; requestAnimationFrame(() => { tick = false; cv.style.transform = 'translateY(' + (-Math.min(scrollY * 0.06, innerHeight * 0.1)) + 'px)'; }); }, { passive: true });
