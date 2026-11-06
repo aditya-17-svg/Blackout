@@ -135,7 +135,14 @@ function buildMap() {
   ctl.onAdd = () => { const b = L.DomUtil.create('button', 'mapbtn'); b.type = 'button'; b.setAttribute('aria-label', 'Change map style'); b.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3 3 8l9 5 9-5-9-5Z"/><path d="m3 13 9 5 9-5"/></svg>'; L.DomEvent.disableClickPropagation(b); b.onclick = () => { const n = names[(names.indexOf(cur) + 1) % names.length]; setBase(n); toast(n + ' map'); }; return b; };
   ctl.addTo(map);
   const fit = () => map.invalidateSize(); addEventListener('resize', fit); addEventListener('orientationchange', () => setTimeout(fit, 300)); setTimeout(fit, 200);
-  zone = L.circle([game.center.lat, game.center.lng], { radius: radius(), color: '#FF7A00', weight: 4, fillOpacity: 0.04 }).addTo(map);
+  const zc = L.control({ position: 'topleft' });
+  zc.onAdd = () => { const d = L.DomUtil.create('div', 'zpill'); d.id = 'zpill'; return d; };
+  zc.addTo(map);
+  // the final safe zone stays fixed on the map
+  if (rl().shrink) { const fc = [game.center.lat, game.center.lng], fr = Math.min(rl().finalM, rl().zoneM);
+    L.circle(fc, { radius: fr, color: '#2A1A0E', weight: 5, opacity: 0.45, fillOpacity: 0, interactive: false }).addTo(map);
+    L.circle(fc, { radius: fr, color: '#F4AE52', weight: 3, dashArray: '8 8', fillOpacity: 0, interactive: false }).addTo(map); }
+  zone = L.circle([game.center.lat, game.center.lng], { radius: radius(), color: '#D4621A', weight: 4, fillOpacity: 0.04 }).addTo(map);
 }
 
 /* ---------- live game ---------- */
@@ -149,7 +156,7 @@ function startGame() {
   navigator.geolocation.watchPosition((p) => {
     if (finished) return;
     me = { lat: p.coords.latitude, lng: p.coords.longitude };
-    if (!myMarker) myMarker = dot(me, role === 'seeker' ? '#FF7A00' : '#FFE135'); else myMarker.setLatLng(me);
+    if (!myMarker) myMarker = dot(me, role === 'seeker' ? '#D4621A' : '#F4AE52'); else myMarker.setLatLng(me);
     if (lastPos) { const d = map.distance(lastPos, me); if (d > 2) { dist += d; route.push([me.lat, me.lng]); } } else route.push([me.lat, me.lng]);
     lastPos = me;
     if (!amTagged() && Date.now() - lastSend > 4000) { // location sharing stops once you are tagged
@@ -157,8 +164,8 @@ function startGame() {
       if (role === 'seeker') setDoc(gref('live', uid), { ...me, t: Date.now() });
     }
   }, () => toast('Location blocked'), { enableHighAccuracy: true });
-  if (role === 'hider') onSnapshot(collection(db, 'games', gid, 'live'), (s) => { clear(); s.forEach((d) => others.push(dot([d.data().lat, d.data().lng], '#FF7A00'))); });
-  else onSnapshot(gref('pings', 'latest'), (s) => { if (!s.exists()) return; clear(); s.data().hiders.forEach((h) => others.push(dot([h.lat, h.lng], '#FFE135'))); toast('PING! Runners located'); });
+  if (role === 'hider') onSnapshot(collection(db, 'games', gid, 'live'), (s) => { clear(); s.forEach((d) => others.push(dot([d.data().lat, d.data().lng], '#D4621A'))); });
+  else onSnapshot(gref('pings', 'latest'), (s) => { if (!s.exists()) return; clear(); s.data().hiders.forEach((h) => others.push(dot([h.lat, h.lng], '#F4AE52'))); toast('PING! Runners located'); });
   $('tagBtn').style.display = role === 'seeker' ? 'block' : 'none';
   loop = setInterval(tick, 1000); tick();
 }
@@ -189,6 +196,18 @@ function tick() {
   if (role === 'seeker') $('info').innerHTML = (r.pingMin ? '<span class="yl">NEXT PING</span> in ' + mmss(Math.max(next, t < hs ? hs - t : 0)) : '<span class="yl">PINGS OFF</span>') + ' · runners free ' + free;
   else $('info').innerHTML = '<span class="or">SEEKER LIVE</span> on your map · runners free ' + free;
   $('tagBtn').disabled = t < hs;
+  // PUBG-style zone timer
+  const zp = $('zpill');
+  if (zp) {
+    const seg = (end - hs) / 4, sh = Math.min(30, seg / 2), tt = t - hs, i = Math.floor(tt / seg), into = tt - i * seg, st = seg - sh;
+    let cls = 'zpill', html;
+    if (!r.shrink) html = '<small>ZONE</small><b>FIXED SIZE</b>';
+    else if (t < hs) html = '<small>HEAD START ENDS IN</small><b>' + mmss(hs - t) + '</b>';
+    else if (i >= 3) html = '<small>FINAL ZONE</small><b>Stay inside the dotted ring</b>';
+    else if (into < st) { html = '<small>ZONE SHRINKS IN</small><b>' + mmss(st - into) + '</b>'; if (st - into <= 10) cls += ' warn'; }
+    else { cls += ' go'; html = '<small>ZONE CLOSING</small><b>' + mmss(seg - into) + '</b><i style="width:' + Math.round(((into - st) / sh) * 100) + '%"></i>'; }
+    zp.className = cls; zp.innerHTML = html;
+  }
 }
 
 /* ---------- tagging: seeker claims, runner confirms ---------- */
