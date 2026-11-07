@@ -124,19 +124,14 @@ input::placeholder{color:color-mix(in srgb,var(--mu) 70%,transparent)}input:focu
 </div>
 </section></main>
 <script type="module">
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, sendEmailVerification, sendPasswordResetEmail, updateProfile, setPersistence, browserLocalPersistence, browserSessionPersistence, signOut } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-import { firebaseConfig } from './config.js';
-const auth = getAuth(initializeApp(firebaseConfig));
+import { sb, confirmed } from './supa.js';
 const $ = (i) => document.getElementById(i);
-let up = false, busy = false, signingUp = false;
+let up = false, busy = false, signingUp = false, recovery = false, pending = null;
 const GO = 'play.html';
 
 /* ---- helpers ---- */
 const say = (t) => ($('err').textContent = t || '');
-const isGoogle = (u) => u.providerData.some((p) => p.providerId === 'google.com');
-const ready = (u) => u && (u.emailVerified || isGoogle(u));
-const COMMON = ['password', '12345678', '123456789', 'qwerty', 'iloveyou', 'letmein', 'manhunt', 'welcome', 'admin'];
+const COMMON = ['password', '12345678', '123456789', 'qwerty', 'iloveyou', 'letmein', 'blackout', 'manhunt', 'welcome', 'admin'];
 function score(p) {
   let c = 0;
   if (/[a-z]/.test(p)) c++; if (/[A-Z]/.test(p)) c++; if (/\d/.test(p)) c++; if (/[^A-Za-z0-9]/.test(p)) c++;
@@ -145,8 +140,8 @@ function score(p) {
   return { lvl: Math.max(0, lvl), ok: p.length >= 10 && c >= 3 && !weak, weak };
 }
 function meter() {
-  const s = score($('pw').value), cols = ['var(--bad)', 'var(--or)', 'var(--yl)', '#9BE564'];
-  [...$('meter').children].forEach((e, i) => (e.style.background = $('pw').value && i < s.lvl ? cols[s.lvl - 1] : 'var(--line)'));
+  const s = score($('pw').value), cols = ['#C0392B', '#D4621A', '#F4AE52', '#6FA84B'];
+  [...$('meter').children].forEach((e, i) => (e.style.background = $('pw').value && i < s.lvl ? cols[s.lvl - 1] : ''));
   $('mt').textContent = !$('pw').value ? '' : s.weak ? 'Too easy to guess' : s.ok ? 'Strong enough' : 'Use 10+ characters with 3 of: a-z, A-Z, 0-9, symbols';
 }
 function mode(u) {
@@ -162,79 +157,114 @@ $('tIn').onclick = () => mode(false); $('tUp').onclick = () => mode(true);
 $('pw').oninput = meter;
 $('eye').onclick = () => { const h = $('pw').type === 'password'; $('pw').type = h ? 'text' : 'password'; $('eye').textContent = h ? 'Hide' : 'Show'; };
 
-/* ---- client-side throttle (Firebase also rate-limits on the server) ---- */
+/* ---- client-side throttle (Supabase also rate-limits on the server) ---- */
 const LK = 'mf_lock';
-const lockLeft = () => { try { const l = JSON.parse(localStorage.getItem(LK) || '{}'); return Math.max(0, Math.ceil(((l.until || 0) - Date.now()) / 1000)); } catch { return 0; } };
-function fail() {
-  try { const l = JSON.parse(localStorage.getItem(LK) || '{}'); l.n = (l.n || 0) + 1;
-    if (l.n >= 5) { l.until = Date.now() + Math.min(900, 30 * 2 ** (l.n - 5)) * 1000; }
-    localStorage.setItem(LK, JSON.stringify(l)); } catch {}
-}
-const clearFails = () => { try { localStorage.removeItem(LK); } catch {} };
+const lockLeft = () => { try { const l = JSON.parse(localStorage.getItem(LK) || '{}'); return Math.max(0, Math.ceil(((l.until || 0) - Date.now()) / 1000)); } catch (e) { return 0; } };
+function fail() { try { const l = JSON.parse(localStorage.getItem(LK) || '{}'); l.n = (l.n || 0) + 1; if (l.n >= 5) l.until = Date.now() + Math.min(900, 30 * 2 ** (l.n - 5)) * 1000; localStorage.setItem(LK, JSON.stringify(l)); } catch (e) {} }
+const clearFails = () => { try { localStorage.removeItem(LK); } catch (e) {} };
+const setKeep = () => { try { localStorage.setItem('mf_keep', $('rem').checked ? '1' : '0'); } catch (e) {} };
 
-const ERR = {
-  'auth/invalid-credential': 'Email or password is incorrect.', 'auth/wrong-password': 'Email or password is incorrect.', 'auth/user-not-found': 'Email or password is incorrect.',
-  'auth/email-already-in-use': 'Could not create that account. Try signing in instead.', 'auth/invalid-email': 'Enter a valid email address.',
-  'auth/weak-password': 'Choose a stronger password.', 'auth/too-many-requests': 'Too many attempts. Please wait a few minutes.', 'auth/network-request-failed': 'Network problem. Check your connection.',
-  'auth/popup-closed-by-user': '', 'auth/cancelled-popup-request': '', 'auth/popup-blocked': 'Your browser blocked the Google window. Allow pop-ups and try again.',
-};
-const msg = (e) => (e.code in ERR ? ERR[e.code] : 'Something went wrong. Please try again.');
+function msg(e) {
+  const m = ((e && (e.code || '')) + ' ' + (e && e.message || '')).toLowerCase();
+  if (m.includes('invalid_credentials') || m.includes('invalid login')) return 'Email or password is incorrect.';
+  if (m.includes('rate') || (e && e.status === 429)) return 'Too many attempts. Please wait a few minutes.';
+  if (m.includes('weak_password') || m.includes('password should')) return 'Choose a stronger password.';
+  if (m.includes('invalid') && m.includes('email')) return 'Enter a valid email address.';
+  if (m.includes('failed to fetch') || m.includes('network')) return 'Network problem. Check your connection.';
+  return 'Something went wrong. Please try again.';
+}
 
 /* ---- submit ---- */
 $('f').addEventListener('submit', async (ev) => {
   ev.preventDefault(); if (busy) return;
   if ($('hp').value) return; // honeypot: bots fill hidden fields
-  const left = lockLeft(); if (left) return say(`Too many attempts. Try again in ${left}s.`);
-  const email = $('email').value.trim().toLowerCase(), pw = $('pw').value, name = $('name').value.trim();
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return say('Enter a valid email address.');
-  if (up) {
-    if (name.length < 2) return say('Choose a display name (2 to 14 characters).');
-    if (!score(pw).ok) return say('Choose a stronger password.');
-    if (!$('terms').checked) return say('Please confirm the age and terms box.');
-  } else if (!pw) return say('Enter your password.');
+  const left = lockLeft(); if (left) return say('Too many attempts. Try again in ' + left + 's.');
+  const email = $('email').value.trim().toLowerCase(), pw = $('pw').value, name = $('name').value.trim().replace(/[<>]/g, '');
   busy = true; $('go').disabled = true; say('');
   try {
-    await setPersistence(auth, $('rem').checked ? browserLocalPersistence : browserSessionPersistence);
-    if (up) {
-      signingUp = true;
-      const c = await createUserWithEmailAndPassword(auth, email, pw);
-      await updateProfile(c.user, { displayName: name.replace(/[<>]/g, '') });
-      await sendEmailVerification(c.user);
-      signingUp = false; showMail(c.user);
-    } else { await signInWithEmailAndPassword(auth, email, pw); clearFails(); }
-  } catch (e) { signingUp = false; if (!up) fail(); say(msg(e)); }
+    if (recovery) { // set a new password after the reset email
+      if (!score(pw).ok) { say('Choose a stronger password.'); }
+      else { const { error } = await sb.auth.updateUser({ password: pw }); if (error) throw error; location.replace(GO); }
+    } else {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { say('Enter a valid email address.'); }
+      else if (up && name.length < 2) { say('Choose a display name (2 to 14 characters).'); }
+      else if (up && !score(pw).ok) { say('Choose a stronger password.'); }
+      else if (up && !$('terms').checked) { say('Please confirm the age and terms box.'); }
+      else if (!up && !pw) { say('Enter your password.'); }
+      else {
+        setKeep();
+        if (up) {
+          signingUp = true;
+          const { data, error } = await sb.auth.signUp({ email, password: pw, options: { data: { display_name: name }, emailRedirectTo: location.origin + '/auth.html' } });
+          signingUp = false; if (error) throw error;
+          // Supabase hides whether an email already exists: an empty identities list means it does
+          if (data.user && data.user.identities && data.user.identities.length === 0) { say('Could not create that account. Try signing in instead.'); }
+          else if (data.session && confirmed(data.session.user)) location.replace(GO);
+          else { pending = { email, pw }; showMail(email); }
+        } else {
+          const { data, error } = await sb.auth.signInWithPassword({ email, password: pw });
+          if (error) {
+            if ((error.code || '') === 'email_not_confirmed' || /not confirmed/i.test(error.message || '')) { pending = { email, pw }; showMail(email); }
+            else throw error;
+          } else { clearFails(); if (confirmed(data.user)) location.replace(GO); else showMail(email); }
+        }
+      }
+    }
+  } catch (e) { signingUp = false; if (!up && !recovery) fail(); say(msg(e)); }
   busy = false; $('go').disabled = false;
 });
 
 $('gg').onclick = async () => {
-  say('');
-  try { await setPersistence(auth, browserLocalPersistence); await signInWithPopup(auth, new GoogleAuthProvider()); }
-  catch (e) { say(msg(e)); }
+  say(''); setKeep();
+  const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin + '/' + GO } });
+  if (error) say('Google sign-in is not available right now.');
 };
 $('forgot').onclick = async () => {
   const email = $('email').value.trim();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return say('Type your email above first.');
-  try { await sendPasswordResetEmail(auth, email); } catch {}
-  say(''); $('err').style.color = 'var(--yl)'; say('If that email has an account, a reset link is on its way.');
-  setTimeout(() => ($('err').style.color = ''), 6000);
+  try { await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + '/auth.html' }); } catch (e) {}
+  $('err').style.color = 'var(--ort)'; say('If that email has an account, a reset link is on its way.');
+  setTimeout(() => { $('err').style.color = ''; }, 6000);
 };
 
-/* ---- email verification panel ---- */
-let cd = 0, poll;
-function showMail(u) {
-  $('vForm').hidden = true; $('vMail').hidden = false; $('mAddr').textContent = u.email;
-  startCd(); clearInterval(poll);
-  poll = setInterval(async () => { await u.reload(); if (u.emailVerified) { clearInterval(poll); location.replace(GO); } }, 4000);
+/* ---- password reset screen (after clicking the reset email) ---- */
+function showRecovery() {
+  recovery = true; $('seg').hidden = true; $('gg').hidden = true; document.querySelector('.or2').hidden = true; $('forgot').hidden = true;
+  $('lName').hidden = true; $('tRow').hidden = true; $('rRow').hidden = true; $('mWrap').hidden = false; $('email').closest('label').hidden = true;
+  $('ttl').textContent = 'Set a new password'; $('sub').textContent = 'Choose a strong password for your account.'; $('go').textContent = 'Update password';
+  $('pw').autocomplete = 'new-password'; $('pw').value = ''; meter();
 }
-function startCd() { cd = 60; const t = setInterval(() => { cd--; $('resend').textContent = cd > 0 ? `Resend email (${cd}s)` : 'Resend email'; $('resend').disabled = cd > 0; if (cd <= 0) clearInterval(t); }, 1000); $('resend').disabled = true; }
-$('resend').onclick = async () => { try { await sendEmailVerification(auth.currentUser); $('ok').textContent = 'Sent again.'; startCd(); } catch { $('ok').textContent = 'Please wait a moment and try again.'; } };
-$('chk').onclick = async () => { await auth.currentUser.reload(); if (auth.currentUser.emailVerified) location.replace(GO); else $('ok').textContent = 'Not verified yet. Open the link in your email.'; };
-$('out').onclick = async () => { clearInterval(poll); await signOut(auth); $('vMail').hidden = true; $('vForm').hidden = false; mode(false); };
 
-onAuthStateChanged(auth, (u) => {
-  if (!u || signingUp) return;
-  if (ready(u)) location.replace(GO); else showMail(u);
+/* ---- email verification panel ---- */
+let cd = 0, cdt;
+function showMail(email) {
+  $('vForm').hidden = true; $('vMail').hidden = false; $('mAddr').textContent = email; startCd();
+}
+function startCd() { clearInterval(cdt); cd = 60; $('resend').disabled = true; cdt = setInterval(() => { cd--; $('resend').textContent = cd > 0 ? 'Resend email (' + cd + 's)' : 'Resend email'; $('resend').disabled = cd > 0; if (cd <= 0) clearInterval(cdt); }, 1000); }
+$('resend').onclick = async () => {
+  if (!pending) { $('ok').textContent = 'Please go back and sign in again.'; return; }
+  const { error } = await sb.auth.resend({ type: 'signup', email: pending.email, options: { emailRedirectTo: location.origin + '/auth.html' } });
+  $('ok').textContent = error ? 'Please wait a moment and try again.' : 'Sent again.'; if (!error) startCd();
+};
+$('chk').onclick = async () => {
+  if (!pending) { $('ok').textContent = 'Not verified yet, or the page was reloaded. Sign in again after verifying.'; return; }
+  const { data, error } = await sb.auth.signInWithPassword({ email: pending.email, password: pending.pw });
+  if (!error && confirmed(data.user)) location.replace(GO); else $('ok').textContent = 'Not verified yet. Open the link in your email.';
+};
+$('out').onclick = async () => { pending = null; await sb.auth.signOut(); $('vMail').hidden = true; $('vForm').hidden = false; mode(false); };
+
+/* ---- session watching ---- */
+sb.auth.onAuthStateChange((ev, session) => {
+  if (ev === 'PASSWORD_RECOVERY') return showRecovery();
+  if (recovery || signingUp) return;
+  if (ev === 'SIGNED_IN' && session && confirmed(session.user)) location.replace(GO);
 });
+(async () => {
+  const { data } = await sb.auth.getSession();
+  const hash = location.hash || '';
+  if (hash.includes('type=recovery')) return;
+  if (data.session && confirmed(data.session.user)) location.replace(GO);
+})();
 mode(false);
 </script>
 <script>
