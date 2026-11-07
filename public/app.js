@@ -36,23 +36,23 @@ $('name').value = myName;
 homeCards(prof);
 
 async function homeCards(p) {
-  const anchor = $('create');
+  const box = $('hstats');
   if (p) {
     const c = el('div', 'card'); c.id = 'mystats';
     c.appendChild(el('div', 'mu', 'YOUR STATS')).style.cssText = 'font-size:11px;letter-spacing:.12em;margin-bottom:10px';
     const r = el('div', 'row');
     [[p.games_played, 'GAMES'], [p.wins, 'WINS'], [Math.round(p.distance_m / 100) / 10 + ' km', 'DISTANCE'], [Math.round(p.calories), 'KCAL']].forEach(([v, l]) => { const s = el('div', 'st'); s.appendChild(el('b', '', String(v))); s.appendChild(el('span', '', l)); r.appendChild(s); });
-    c.appendChild(r); anchor.before(c);
+    c.appendChild(r); box.appendChild(c);
   }
   const { data: top } = await sb.from('profiles').select('display_name,wins,distance_m').gt('games_played', 0).order('wins', { ascending: false }).order('distance_m', { ascending: false }).limit(5);
   if (top && top.length) {
     const c = el('div', 'card'); c.appendChild(el('div', 'mu', 'TOP PLAYERS')).style.cssText = 'font-size:11px;letter-spacing:.12em;margin-bottom:6px';
     top.forEach((t, i) => { const r = el('div', 'er'); r.appendChild(el('span', '', (i + 1) + '. ' + t.display_name)); r.appendChild(el('span', 'yl', t.wins + ' wins')); c.appendChild(r); });
-    anchor.before(c);
+    box.appendChild(c);
   }
 }
 
-if (!$('so')) { const b = el('button', 'o', 'Sign out'); b.id = 'so'; b.onclick = () => sb.auth.signOut().then(() => location.replace('auth.html')); $('home').appendChild(b); }
+$('so').onclick = () => sb.auth.signOut().then(() => location.replace('auth.html'));
 const qc = new URLSearchParams(location.search).get('code');
 if (qc) $('code').value = qc.slice(0, 6).toUpperCase();
 $('sheet').onclick = (e) => { if (e.target === $('sheet') && !$('sheet').dataset.lock) closeSheet(); };
