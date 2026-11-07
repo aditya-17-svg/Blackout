@@ -1,6 +1,5 @@
 <!doctype html>
-<html lang="en"><head>
-<script>/* Light / dark mode + button ripples. Load in <head> so the theme is set before the page paints. */
+<html lang="en" data-theme="light"><head><script>/* Light / dark mode + button ripples. Load in <head> so the theme is set before the page paints. */
 (function () {
   var K = 'mf_theme', r = document.documentElement, t, btn;
   try { t = localStorage.getItem(K); } catch (e) {}
@@ -33,14 +32,92 @@
     el.appendChild(d); setTimeout(function () { d.remove(); }, 700);
   }, { passive: true });
 })();
-</script><meta charset="utf-8">
+</script>
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="var(--bg)">
+<meta name="theme-color" content="#FEF3E2">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2215%22 fill=%22%232A1A0E%22/%3E%3Cpath fill-rule=%22evenodd%22 fill=%22%23F4AE52%22 transform=%22translate(-1 8) scale(.78)%22 d=%22M11 14H27C34 14 38 18 38 23.5C38 28 35.5 30.5 32 31.5C36.5 32.5 40 35.5 40 41C40 47 35.5 50 28 50H11ZM19 20.5V27.5H26C29.5 27.5 31 26 31 24C31 22 29.5 20.5 26 20.5ZM19 34.5V43.5H27C31 43.5 32.5 42 32.5 39C32.5 36 31 34.5 27 34.5Z%22/%3E%3Ccircle cx=%2245.5%22 cy=%2233%22 r=%2210%22 fill=%22none%22 stroke=%22%23D4621A%22 stroke-width=%227%22/%3E%3C/svg%3E" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>Blackout</title>
+<title>Play – Blackout</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <link rel="stylesheet" href="style.css">
+</head><body>
+<div id="gmap" aria-hidden="true"></div><div id="gscrim"></div>
+<div id="toast"></div>
+<div id="sheet" class="sheet"><div class="in" id="sheetIn"></div></div>
+<header class="hdr"><a class="logo" href="index.html"><svg width="36" height="36" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="15" fill="#2A1A0E"/><path fill-rule="evenodd" fill="#F4AE52" transform="translate(-1 8) scale(.78)" d="M11 14H27C34 14 38 18 38 23.5C38 28 35.5 30.5 32 31.5C36.5 32.5 40 35.5 40 41C40 47 35.5 50 28 50H11ZM19 20.5V27.5H26C29.5 27.5 31 26 31 24C31 22 29.5 20.5 26 20.5ZM19 34.5V43.5H27C31 43.5 32.5 42 32.5 39C32.5 36 31 34.5 27 34.5Z"/><circle cx="45.5" cy="33" r="10" fill="none" stroke="#D4621A" stroke-width="7"/></svg>BLACKOUT</a><span id="themeSlot"></span></header>
+
+<section id="home" class="scr on"><div class="hg">
+  <div class="hl"><p class="eb">REAL STREETS. REAL STRATEGY.</p><h1>Ready to <span>hunt?</span></h1><p class="lead">Create a game, share the code and the chase begins. Or join a friend’s game with their code.</p><div id="hstats"></div></div>
+  <div class="panel">
+    <label class="fl">Display name<input id="name" type="text" placeholder="Your name" maxlength="14" autocomplete="nickname"></label>
+    <button id="create" type="button">Create new game</button>
+    <div class="or2">or join a game</div>
+    <div class="jr"><input id="code" type="text" placeholder="JOIN CODE" maxlength="6" autocapitalize="characters" autocomplete="off"><button class="o" id="join" type="button">Join</button></div>
+    <button class="lnk" id="so" type="button">Sign out</button>
+  </div>
+</div></section>
+
+<section id="lobby" class="scr"><div class="lg2">
+  <div>
+    <p class="eb">GAME LOBBY</p><p class="mono">SHARE THIS CODE</p><h1 id="lcode" class="code"></h1>
+    <button class="o" id="share" type="button">Share invite link</button>
+    <h3 class="sh">Players</h3><div id="plist"></div>
+  </div>
+  <div>
+    <div class="card" id="rulesBox">
+      <p class="mono">GAME RULES</p>
+      <svg id="prev" viewBox="0 0 200 200" role="img" aria-label="Zone preview"><circle cx="100" cy="100" r="96" style="fill:var(--inp);stroke:var(--line)"/><circle id="pOut" cx="100" cy="100" r="60" style="fill:color-mix(in srgb,var(--B) 12%,transparent);stroke:var(--B);stroke-width:3"/><circle id="pIn" cx="100" cy="100" r="20" style="fill:none;stroke:var(--A);stroke-width:2;stroke-dasharray:6 5"/></svg>
+      <label class="rg"><span>Round length <b id="v-round"></b></span><input type="range" id="r-round" min="5" max="180" step="5"></label>
+      <label class="rg"><span>Ping every <b id="v-ping"></b></span><input type="range" id="r-ping" min="0" max="30" step="1"></label>
+      <label class="rg"><span>Head start <b id="v-head"></b></span><input type="range" id="r-head" min="0" max="30" step="1"></label>
+      <label class="rg"><span>Zone size (width) <b id="v-zone"></b></span><input type="range" id="r-zone" min="200" max="3000" step="20"></label>
+      <label class="rg chk"><input type="checkbox" id="r-shrink"><span>Zone shrinks during the round</span></label>
+      <label class="rg" id="finalRow"><span>Final zone size <b id="v-final"></b></span><input type="range" id="r-final" min="100" max="1500" step="20"></label>
+    </div>
+    <button id="start" type="button" style="display:none">Start game</button>
+    <p class="mu hint" id="lhint">Waiting for the host to start...</p>
+  </div>
+</div></section>
+
+<section id="game" class="scr">
+  <div class="top"><span id="role" class="chip a"></span><b id="clock"></b></div>
+  <div id="banner" class="banner"></div>
+  <div id="map"></div>
+  <div class="card" id="infoCard"><div id="info"></div></div>
+  <div class="row" id="statsRow">
+    <div class="st"><b id="tm">00:00</b><span>TIMER</span></div>
+    <div class="st"><b id="kc">0</b><span>KCAL</span></div>
+    <div class="st"><b id="ds">0</b><span>METRES</span></div>
+  </div>
+  <div id="modes"><span class="chip a" data-m="run">Run</span><span class="chip" data-m="walk">Walk</span><span class="chip" data-m="ride">Ride</span></div>
+  <button id="tagBtn" type="button" style="display:none">Tag a hider</button>
+</section>
+
+<section id="end" class="scr"><div class="res">
+  <div class="c"><span class="chip a" id="eTag">ROUND OVER</span><h1 id="eTitle"></h1><p class="lead" id="eSub"></p></div>
+  <div class="row"><div class="st"><b id="eD">0</b><span>METRES</span></div><div class="st"><b id="eK">0</b><span>KCAL</span></div><div class="st"><b id="eT">0</b><span>MINUTES</span></div></div>
+  <div class="row" style="margin-top:10px"><div class="st"><b id="eP">--</b><span>PACE /KM</span></div><div class="st"><b id="eF">0</b><span>HIDERS TAGGED</span></div></div>
+  <div class="card" style="margin-top:12px"><p class="mono">RESULTS</p><div id="eList"></div></div>
+  <button id="again" type="button">Back to home</button>
+</div></section>
+<script type="module" src="app.js"></script>
+<script>
+/* Real map background: Esri street tiles (light) and Esri dark gray tiles (dark). */
+(function(){
+ var Z=14,LAT=37.8005,LNG=-122.4150,S=256,C=9,R=7,n=Math.pow(2,Z);
+ var fx=(LNG+180)/360*n,fy=(1-Math.log(Math.tan(LAT*Math.PI/180)+1/Math.cos(LAT*Math.PI/180))/Math.PI)/2*n;
+ var x0=Math.floor(fx)-Math.floor(C/2),y0=Math.floor(fy)-Math.floor(R/2);
+ var pan=document.createElement('div');pan.className='pan';document.getElementById('gmap').appendChild(pan);
+ var holder=document.createElement('div');holder.style.cssText='position:absolute;left:'+(-(fx-x0)*S)+'px;top:'+(-(fy-y0)*S)+'px';pan.appendChild(holder);
+ var imgs=[];
+ for(var r=0;r<R;r++)for(var c=0;c<C;c++){var im=new Image();im.alt='';im.draggable=false;im.style.left=c*S+'px';im.style.top=r*S+'px';im.onload=function(){this.classList.add('ok')};im.dataset.x=x0+c;im.dataset.y=y0+r;holder.appendChild(im);imgs.push(im)}
+ function load(){var dark=window.mfTheme&&mfTheme.get()==='dark',svc=dark?'Canvas/World_Dark_Gray_Base':'World_Street_Map';imgs.forEach(function(im){im.classList.remove('ok');im.src='https://server.arcgisonline.com/ArcGIS/rest/services/'+svc+'/MapServer/tile/'+Z+'/'+im.dataset.y+'/'+im.dataset.x})}
+ document.addEventListener('themechange',load);load();
+})();
+</script>
 <style>/* Palette: cream #FEF3E2 · amber #F4AE52 · burnt orange #D4621A · dark brown #2A1A0E */
 :root[data-theme="dark"]{--bg:#2A1A0E;--card:#38251A;--inp:#21130A;--line:rgba(254,243,226,.16);--tx:#FEF3E2;--mu:#D2BFA5;--or:#F4AE52;--yl:#D4621A;--ort:#E8803A;--ylt:#F4AE52;--onp:#2A1A0E;--bad:#FF9A78;color-scheme:dark}
 :root[data-theme="light"]{--bg:#FEF3E2;--card:#FFF9F1;--inp:#FFFFFF;--line:rgba(42,26,14,.16);--tx:#2A1A0E;--mu:#6B5443;--or:#F4AE52;--yl:#D4621A;--ort:#A94A10;--ylt:#8A5A12;--onp:#2A1A0E;--bad:#B3261E;color-scheme:light}
@@ -69,56 +146,4 @@ button:disabled{cursor:not-allowed}
 :focus-visible{outline:2px solid var(--yl);outline-offset:2px}
 @media (prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important}.btn:hover,button:hover{transform:none!important}}
 </style>
-</head><body>
-<div id="toast"></div>
-<div id="sheet" class="sheet"><div class="in" id="sheetIn"></div></div>
-<section id="home" class="scr on">
-  <small>Blackout</small>
-  <h1>Ready to <span>hunt?</span></h1>
-  <input id="name" placeholder="Your name" maxlength="14">
-  <button id="create">Create new game</button>
-  <div class="row"><input id="code" placeholder="Join code" maxlength="6"><button class="o" id="join">Join</button></div>
-</section>
-
-<section id="lobby" class="scr">
-  <small>Share this code</small><h1 id="lcode" class="yl"></h1>
-  <button class="o" id="share">Share invite link</button>
-  <div id="plist"></div>
-  <div class="card" id="rulesBox">
-    <div class="or" style="font-size:12px;letter-spacing:1px">GAME RULES</div>
-    <svg id="prev" viewBox="0 0 200 200" role="img" aria-label="Zone preview"><circle cx="100" cy="100" r="96" fill="var(--inp)"/><circle id="pOut" cx="100" cy="100" r="60" fill="rgba(212,98,26,.08)" stroke="var(--or)" stroke-width="3"/><circle id="pIn" cx="100" cy="100" r="20" fill="none" stroke="var(--yl)" stroke-width="2" stroke-dasharray="6 5"/></svg>
-    <label class="rg"><span>Round length <b id="v-round"></b></span><input type="range" id="r-round" min="5" max="180" step="5"></label>
-    <label class="rg"><span>Ping every <b id="v-ping"></b></span><input type="range" id="r-ping" min="0" max="30" step="1"></label>
-    <label class="rg"><span>Head start <b id="v-head"></b></span><input type="range" id="r-head" min="0" max="30" step="1"></label>
-    <label class="rg"><span>Zone size (width) <b id="v-zone"></b></span><input type="range" id="r-zone" min="200" max="3000" step="20"></label>
-    <label class="rg chk"><input type="checkbox" id="r-shrink"><span>Zone shrinks during the round</span></label>
-    <label class="rg" id="finalRow"><span>Final zone size <b id="v-final"></b></span><input type="range" id="r-final" min="100" max="1500" step="20"></label>
-  </div>
-  <button id="start" style="display:none">Start game</button>
-  <p class="mu" id="lhint">Waiting for the host to start...</p>
-</section>
-
-<section id="game" class="scr">
-  <div class="top"><span id="role" class="chip a"></span><b id="clock" class="yl"></b></div>
-  <div id="banner" class="banner"></div>
-  <div id="map"></div>
-  <div class="card"><div id="info"></div></div>
-  <div class="row">
-    <div class="st"><b id="tm">00:00</b><span>TIMER</span></div>
-    <div class="st"><b id="kc" class="or">0</b><span>KCAL</span></div>
-    <div class="st"><b id="ds">0</b><span>METRES</span></div>
-  </div>
-  <div id="modes"><span class="chip a" data-m="run">Run</span><span class="chip" data-m="walk">Walk</span><span class="chip" data-m="ride">Ride</span></div>
-  <button id="tagBtn" style="display:none">Tag a runner</button>
-</section>
-
-<section id="end" class="scr">
-  <div class="c"><span class="chip a" id="eTag">ROUND OVER</span><h1 id="eTitle" class="yl"></h1><p class="mu" id="eSub"></p></div>
-  <div class="row"><div class="st"><b id="eD">0</b><span>METRES</span></div><div class="st"><b id="eK" class="or">0</b><span>KCAL</span></div><div class="st"><b id="eT">0</b><span>MINUTES</span></div></div>
-  <div class="row" style="margin-top:10px"><div class="st"><b id="eP">--</b><span>PACE /KM</span></div><div class="st"><b id="eF" class="or">0</b><span>RUNNERS TAGGED</span></div></div>
-  <div class="card" style="margin-top:12px"><div class="mu" style="font-size:12px;letter-spacing:1px;margin-bottom:8px">RESULTS</div><div id="eList"></div></div>
-  <button id="again">Back to home</button>
-</section>
-<script type="module" src="app.js"></script>
-<script src="topo.js" defer></script>
 </body></html>
