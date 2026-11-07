@@ -112,8 +112,8 @@ document.querySelectorAll('.role').forEach(b=>b.onclick=()=>{role=b.dataset.r;do
 if(Q.get('role')==='seeker'){role='seeker';document.querySelectorAll('.role').forEach(x=>x.classList.toggle('on',x.dataset.r==='seeker'))}
 const radius=()=>{const i=Math.min(3,Math.floor(t/LEN)),n=Math.min(3,i+1),into=t-i*LEN,s=LEN-SHR;return into<=s||i===n?ST[i]:ST[i]+(ST[n]-ST[i])*((into-s)/SHR)};
 const puck=(p,c)=>L.marker(p,{icon:L.divIcon({className:'puck',html:'<i style="background:'+c+'"></i>',iconSize:[22,22]}),interactive:false}).addTo(map);
-const BASES={light:'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',dark:'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'};
-function setBase(){if(!map)return;if(layer)layer.remove();layer=L.tileLayer(BASES[window.mfTheme.get()],{subdomains:'abcd',maxZoom:20,attribution:'&copy; OpenStreetMap &copy; CARTO'}).addTo(map);layer.bringToBack()}
+const ES='https://server.arcgisonline.com/ArcGIS/rest/services/',BASES={light:[ES+'World_Street_Map/MapServer/tile/{z}/{y}/{x}',19,null],dark:[ES+'Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',16,ES+'Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}']};let layer2;
+function setBase(){if(!map)return;if(layer)layer.remove();if(layer2)layer2.remove();const b=BASES[window.mfTheme.get()],o={maxNativeZoom:b[1],maxZoom:20,attribution:'Tiles &copy; Esri'};layer=L.tileLayer(b[0],o).addTo(map);layer.bringToBack();layer2=b[2]?L.tileLayer(b[2],o).addTo(map):null}
 document.addEventListener('themechange',setBase);
 function locate(cb){if(!navigator.geolocation)return cb(null);let d=false;const f=v=>{if(!d){d=true;cb(v)}};navigator.geolocation.getCurrentPosition(p=>f([p.coords.latitude,p.coords.longitude]),()=>f(null),{timeout:7000,maximumAge:60000});setTimeout(()=>f(null),7500)}
 $('go').onclick=()=>{$('go').disabled=true;$('note').textContent='Finding your location...';locate(p=>{$('go').disabled=false;
