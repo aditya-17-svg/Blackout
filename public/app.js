@@ -157,19 +157,20 @@ $('start').onclick = async () => {
 };
 
 /* ---------- map ---------- */
+const ES = 'https://server.arcgisonline.com/ArcGIS/rest/services/';
 const BASES = {
-  Standard: ['https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { subdomains: 'abcd', maxZoom: 20, attribution: '&copy; OpenStreetMap &copy; CARTO' }, '#E9E7E1'],
-  Dark: ['https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { subdomains: 'abcd', maxZoom: 20, attribution: '&copy; OpenStreetMap &copy; CARTO' }, '#1C1C1E'],
-  Satellite: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Imagery &copy; Esri' }, '#222'],
+  Standard: [ES + 'World_Street_Map/MapServer/tile/{z}/{y}/{x}', { maxNativeZoom: 19, maxZoom: 20, attribution: 'Tiles &copy; Esri' }, '#E9E7E1', null],
+  Dark: [ES + 'Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxNativeZoom: 16, maxZoom: 20, attribution: 'Tiles &copy; Esri' }, '#1C1C1E', ES + 'Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}'],
+  Satellite: [ES + 'World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxNativeZoom: 19, maxZoom: 20, attribution: 'Imagery &copy; Esri' }, '#222', null],
 };
 const dot = (ll, color) => L.marker(ll, { icon: L.divIcon({ className: 'puck', html: '<i style="background:' + color + '"></i>', iconSize: [24, 24] }) }).addTo(map);
 const clear = () => { others.forEach((m) => m.remove()); others = []; };
 const gc = () => [game.center_lat, game.center_lng];
 function buildMap() {
   map = L.map('map', { zoomControl: false }).setView(gc(), 15);
-  const names = Object.keys(BASES); let cur = 'Standard', layer;
+  const names = Object.keys(BASES); let cur = 'Standard', layer, layer2;
   try { const sv = localStorage.getItem('mf_map'); if (BASES[sv]) cur = sv; } catch (e) {}
-  const setBase = (n) => { cur = n; if (layer) layer.remove(); layer = L.tileLayer(BASES[n][0], BASES[n][1]).addTo(map); layer.bringToBack(); map.getContainer().style.background = BASES[n][2]; try { localStorage.setItem('mf_map', n); } catch (e) {} };
+  const setBase = (n) => { cur = n; if (layer) layer.remove(); if (layer2) layer2.remove(); layer = L.tileLayer(BASES[n][0], BASES[n][1]).addTo(map); layer.bringToBack(); layer2 = BASES[n][3] ? L.tileLayer(BASES[n][3], BASES[n][1]).addTo(map) : null; map.getContainer().style.background = BASES[n][2]; try { localStorage.setItem('mf_map', n); } catch (e) {} };
   setBase(cur);
   const ctl = L.control({ position: 'topright' });
   ctl.onAdd = () => { const b = L.DomUtil.create('button', 'mapbtn'); b.type = 'button'; b.setAttribute('aria-label', 'Change map style'); b.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3 3 8l9 5 9-5-9-5Z"/><path d="m3 13 9 5 9-5"/></svg>'; L.DomEvent.disableClickPropagation(b); b.onclick = () => { const n = names[(names.indexOf(cur) + 1) % names.length]; setBase(n); toast(n + ' map'); }; return b; };
