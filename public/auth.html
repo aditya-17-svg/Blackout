@@ -171,7 +171,7 @@ function msg(e) {
   if (m.includes('weak_password') || m.includes('password should')) return 'Choose a stronger password.';
   if (m.includes('invalid') && m.includes('email')) return 'Enter a valid email address.';
   if (m.includes('failed to fetch') || m.includes('network')) return 'Network problem. Check your connection.';
-  return 'Something went wrong. Please try again.';
+  return 'Something went wrong' + (e && e.message ? ' (' + String(e.message).slice(0, 140) + ')' : '') + '. Please try again.';
 }
 
 /* ---- submit ---- */
@@ -210,7 +210,7 @@ $('f').addEventListener('submit', async (ev) => {
         }
       }
     }
-  } catch (e) { signingUp = false; if (!up && !recovery) fail(); say(msg(e)); }
+  } catch (e) { console.error('auth error', e); signingUp = false; if (!up && !recovery) fail(); say(msg(e)); }
   busy = false; $('go').disabled = false;
 });
 
@@ -268,7 +268,7 @@ sb.auth.onAuthStateChange((ev, session) => {
 mode(false);
 </script>
 <script>
-/* Real map background: free CARTO tiles that look like Google Maps (light = Voyager, dark = Dark Matter). */
+/* Real map background: Esri street tiles (light) and Esri dark gray tiles (dark). */
 (function(){
  var Z=14,LAT=37.8005,LNG=-122.4150,S=256,C=9,R=7,n=Math.pow(2,Z);
  var fx=(LNG+180)/360*n,fy=(1-Math.log(Math.tan(LAT*Math.PI/180)+1/Math.cos(LAT*Math.PI/180))/Math.PI)/2*n;
@@ -277,7 +277,7 @@ mode(false);
  var holder=document.createElement('div');holder.style.cssText='position:absolute;left:'+(-(fx-x0)*S)+'px;top:'+(-(fy-y0)*S)+'px';pan.appendChild(holder);
  var imgs=[];
  for(var r=0;r<R;r++)for(var c=0;c<C;c++){var im=new Image();im.alt='';im.draggable=false;im.style.left=c*S+'px';im.style.top=r*S+'px';im.onload=function(){this.classList.add('ok')};im.dataset.x=x0+c;im.dataset.y=y0+r;holder.appendChild(im);imgs.push(im)}
- function load(){var st=(window.mfTheme&&mfTheme.get()==='dark')?'dark_all':'rastertiles/voyager';imgs.forEach(function(im){im.classList.remove('ok');im.src='https://'+'abcd'[(+im.dataset.x+ +im.dataset.y)%4]+'.basemaps.cartocdn.com/'+st+'/'+Z+'/'+im.dataset.x+'/'+im.dataset.y+'@2x.png'})}
+ function load(){var dark=window.mfTheme&&mfTheme.get()==='dark',svc=dark?'Canvas/World_Dark_Gray_Base':'World_Street_Map';imgs.forEach(function(im){im.classList.remove('ok');im.src='https://server.arcgisonline.com/ArcGIS/rest/services/'+svc+'/MapServer/tile/'+Z+'/'+im.dataset.y+'/'+im.dataset.x})}
  document.addEventListener('themechange',load);load();
 })();
 </script>
