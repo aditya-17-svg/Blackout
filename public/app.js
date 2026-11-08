@@ -5,6 +5,7 @@ const $ = (i) => document.getElementById(i);
 const MET = { run: 9.8, walk: 3.8, ride: 7.5 };
 const DEFAULTS = { roundMin: 45, pingMin: 5, headMin: 3, zoneM: 840, finalM: 200, shrink: true };
 let uid, myName = 'Player', gid, game, players = {}, tags = {}, mode = 'run', skew = 0, poll, chan;
+let started = false;
 let map, zone, me, pts, watchId = null, follow = true, firstFix = true, lastGpsErr = 0, dist = 0, lastPos, lastSend = 0, loop, finished = false, outT = 0, pendingShown = '', lastPing = '', startedMap = false;
 
 /* ---------- helpers ---------- */
@@ -91,7 +92,8 @@ async function enter() {
     if (sn) skew = Date.parse(sn) - (t0 + Date.now()) / 2;
     await sb.from('game_players').upsert({ game_id: gid, user_id: uid, name: myName, role: 'hider' }, { onConflict: 'game_id,user_id', ignoreDuplicates: true });
     show('lobby');
-    await Promise.all([loadGame(), loadPlayers(), loadTags()]);
+    await loadPlayers(); // players first: the game screen needs to know your role
+    await Promise.all([loadGame(), loadTags()]);
     // live updates; the 3 second refresh below is a safety net if Realtime is not enabled
     const f = (t) => 'game_id=eq.' + gid;
     chan = sb.channel('g' + gid)
@@ -107,7 +109,7 @@ async function enter() {
 async function loadGame() {
   const { data } = await sb.from('games').select('*').eq('id', gid).maybeSingle(); if (!data) return;
   const was = game && game.status; game = data; renderLobby();
-  if (game.status === 'live' && !loop && !finished) startGame();
+  if (game.status === 'live' && !started && !finished && myRole()) startGame();
   if (game.status === 'over' && loop) finish(game.winner);
 }
 async function loadPlayers() { const { data } = await sb.from('game_players').select('*').eq('game_id', gid); if (!data) return; players = {}; data.forEach((p) => (players[p.user_id] = p)); renderLobby(); }
@@ -222,14 +224,15 @@ async function loadPings() { // seekers only see hiders when the server releases
   if (!first || nowMs() - Date.parse(data.taken_at) < 20000) toast('PING! Hiders located');
 }
 function startGame() {
-  show('game'); finished = false;
+  started = true; show('game'); finished = false;
   const role = myRole();
   $('role').textContent = role.toUpperCase(); $('role').style.background = role === 'seeker' ? 'var(--or)' : 'var(--yl)';
-  buildMap();
+  try { if (!window.L) throw new Error('Leaflet is missing'); buildMap(); } catch (e) { console.error('Map failed to start', e); map = null; zone = null; pts = null; toast('The map could not load. Check your connection and refresh.'); }
   firstFix = true; follow = true;
   watchId = navigator.geolocation.watchPosition((p) => { // your solid point follows your phone's GPS
     if (finished) return;
     me = { lat: p.coords.latitude, lng: p.coords.longitude };
+    if (!map || !pts) return;
     pts.setMe(me.lat, me.lng, p.coords.accuracy, role, myName);
     if (firstFix) { firstFix = false; map.setView([me.lat, me.lng], Math.max(map.getZoom(), 16)); }
     else if (follow) map.panTo([me.lat, me.lng], { animate: true, duration: 0.9 });
@@ -248,12 +251,12 @@ function startGame() {
 function setBanner(txt, yellow) { const b = $('banner'); b.textContent = txt || ''; b.classList.toggle('on', !!txt); b.classList.toggle('y', !!yellow); }
 function tick() {
   const r = rl(), t = elapsed(), hs = r.headMin * 60, end = r.roundMin * 60, role = myRole(), rad = radius();
-  zone.setRadius(rad);
+  if (zone) zone.setRadius(rad);
   const w = hiders().length && freeHiders().length === 0 ? 'seekers' : t >= end ? 'hiders' : null;
   if (w) { if (game.host === uid && game.status !== 'over') sb.rpc('finish_game', { g: gid, w }).then(() => {}); return finish(w); }
   const kc = Math.round((MET[mode] * 70 * t) / 3600);
   $('tm').textContent = mmss(t); $('kc').textContent = kc; $('ds').textContent = Math.round(dist); $('clock').textContent = mmss(end - t);
-  const out = me && map.distance(gc(), me) > rad;
+  const out = me && map && map.distance(gc(), me) > rad;
   if (role === 'hider' && !amTagged() && t > hs && !isPaused()) { // zone penalty: warn, then count as tagged
     outT = out ? outT + 1 : Math.max(0, outT - 1);
     if (outT >= 120) { sb.rpc('tag_self', { g: gid }).then(() => loadPlayers()); toast('You stayed outside the zone: counted as tagged'); outT = 0; }
