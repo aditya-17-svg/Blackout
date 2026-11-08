@@ -86,11 +86,11 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
 /* responsive */
 @media (max-width:900px){.hg,.lg2{grid-template-columns:1fr}h1{font-size:clamp(46px,13vw,72px)}}
 @media (min-width:1000px) and (min-height:560px){
-  #game.on{display:grid;grid-template-columns:minmax(0,1fr) 360px;grid-template-rows:auto auto auto auto auto auto 1fr;column-gap:24px;grid-template-areas:"map top" "map banner" "map info" "map stats" "map modes" "map tag" "map ."}
+  #game.on{display:grid;grid-template-columns:minmax(0,1fr) 360px;grid-template-rows:auto auto auto auto auto auto auto 1fr;column-gap:24px;grid-template-areas:"map top" "map banner" "map info" "map stats" "map modes" "map tag" "map host" "map ."}
   #game .top{grid-area:top}#game #banner{grid-area:banner}#game #mapWrap{grid-area:map}#game #map{height:calc(100dvh - 120px)}#game #infoCard{grid-area:info;margin-top:0}#game #statsRow{grid-area:stats}#game #modes{grid-area:modes}#game #tagBtn{grid-area:tag}
 }
 @media (max-height:520px) and (orientation:landscape){
-  #game.on{display:grid;grid-template-columns:minmax(0,1fr) 300px;column-gap:14px;grid-template-areas:"map top" "map banner" "map info" "map stats" "map modes" "map tag"}
+  #game.on{display:grid;grid-template-columns:minmax(0,1fr) 300px;column-gap:14px;grid-template-areas:"map top" "map banner" "map info" "map stats" "map modes" "map tag" "map host"}
   #game .top{grid-area:top;margin-bottom:6px}#game .top b{font-size:30px}#game #banner{grid-area:banner}#game #mapWrap{grid-area:map}#game #map{height:calc(100dvh - 90px);min-height:0}#game #infoCard{grid-area:info;margin:6px 0}#game #statsRow{grid-area:stats}#game #modes{grid-area:modes}#game #tagBtn{grid-area:tag}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important}}
@@ -114,4 +114,4 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
 #mapWrap{position:relative}
 .pauseov{position:absolute;inset:0;z-index:800;display:flex;align-items:center;justify-content:center;text-align:center;padding:20px;border-radius:10px;background:color-mix(in srgb,var(--bg) 82%,transparent);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
 .pauseov b{display:block;font:400 clamp(38px,6vw,56px)/1 var(--fh);text-transform:uppercase;color:var(--ort)}.pauseov p{color:var(--mu);margin:10px auto 0;max-width:30ch;line-height:1.5}
-#hostBar{display:flex;gap:10px;margin-top:6px}#hostBar[hidden]{display:none}#hostBar button{margin:0}
+#game #hostBar{grid-area:host}#hostBar{display:flex;gap:10px;margin-top:6px}#hostBar[hidden]{display:none}#hostBar button{margin:0}
