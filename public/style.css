@@ -87,10 +87,31 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
 @media (max-width:900px){.hg,.lg2{grid-template-columns:1fr}h1{font-size:clamp(46px,13vw,72px)}}
 @media (min-width:1000px) and (min-height:560px){
   #game.on{display:grid;grid-template-columns:minmax(0,1fr) 360px;grid-template-rows:auto auto auto auto auto auto 1fr;column-gap:24px;grid-template-areas:"map top" "map banner" "map info" "map stats" "map modes" "map tag" "map ."}
-  #game .top{grid-area:top}#game #banner{grid-area:banner}#game #map{grid-area:map;height:calc(100dvh - 120px)}#game #infoCard{grid-area:info;margin-top:0}#game #statsRow{grid-area:stats}#game #modes{grid-area:modes}#game #tagBtn{grid-area:tag}
+  #game .top{grid-area:top}#game #banner{grid-area:banner}#game #mapWrap{grid-area:map}#game #map{height:calc(100dvh - 120px)}#game #infoCard{grid-area:info;margin-top:0}#game #statsRow{grid-area:stats}#game #modes{grid-area:modes}#game #tagBtn{grid-area:tag}
 }
 @media (max-height:520px) and (orientation:landscape){
   #game.on{display:grid;grid-template-columns:minmax(0,1fr) 300px;column-gap:14px;grid-template-areas:"map top" "map banner" "map info" "map stats" "map modes" "map tag"}
-  #game .top{grid-area:top;margin-bottom:6px}#game .top b{font-size:30px}#game #banner{grid-area:banner}#game #map{grid-area:map;height:calc(100dvh - 90px);min-height:0}#game #infoCard{grid-area:info;margin:6px 0}#game #statsRow{grid-area:stats}#game #modes{grid-area:modes}#game #tagBtn{grid-area:tag}
+  #game .top{grid-area:top;margin-bottom:6px}#game .top b{font-size:30px}#game #banner{grid-area:banner}#game #mapWrap{grid-area:map}#game #map{height:calc(100dvh - 90px);min-height:0}#game #infoCard{grid-area:info;margin:6px 0}#game #statsRow{grid-area:stats}#game #modes{grid-area:modes}#game #tagBtn{grid-area:tag}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important}}
+
+/* ---------- player points on the map ---------- */
+.ptw{background:none;border:0}
+.pt{position:relative;display:block;width:22px;height:22px;margin:3px;border-radius:50%;background:var(--c);border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.5);cursor:pointer;transition:transform .2s}
+.pt:hover{transform:scale(1.18)}
+.pt.me{box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 45%,transparent),0 2px 8px rgba(0,0,0,.5)}
+.pt.me:after,.pt.ping:after{content:"";position:absolute;inset:-12px;border-radius:50%;background:var(--c);opacity:.3;animation:pk 2s ease-out infinite;z-index:-1;pointer-events:none}
+.ppop .leaflet-popup-content-wrapper{background:var(--card);color:var(--tx);border-radius:8px;border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.ppop .leaflet-popup-tip{background:var(--card)}
+.ppop .leaflet-popup-content{margin:12px 14px}
+.pcard b{font:700 14px var(--fb);margin-right:8px}.pcard p{margin:6px 0 0;font:400 12.5px/1.4 var(--fb);color:var(--mu)}
+.pcard .pr{font:600 9.5px var(--fm);letter-spacing:.12em;padding:3px 7px;border-radius:3px;background:var(--A);color:#2A1A0E}.pcard .pr.seeker{background:var(--B);color:#FEF3E2}
+.leaflet-control .legend,.legend{display:flex;gap:12px;background:color-mix(in srgb,var(--bg) 88%,transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);padding:7px 11px;border-radius:6px;font:600 10px var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--tx);box-shadow:inset 0 0 0 1px var(--line)}
+.legend span{display:flex;align-items:center;gap:6px}.legend i{width:11px;height:11px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.25)}
+.locbtn{width:44px;height:44px;border-radius:8px;border:0;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#2A1A0E;background:rgba(255,251,245,.86);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);box-shadow:0 2px 10px rgba(0,0,0,.25);margin:8px 10px 0 0!important;padding:0}.locbtn.on{background:var(--B);color:#FEF3E2}
+
+/* ---------- pause overlay + host controls ---------- */
+#mapWrap{position:relative}
+.pauseov{position:absolute;inset:0;z-index:800;display:flex;align-items:center;justify-content:center;text-align:center;padding:20px;border-radius:10px;background:color-mix(in srgb,var(--bg) 82%,transparent);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.pauseov b{display:block;font:400 clamp(38px,6vw,56px)/1 var(--fh);text-transform:uppercase;color:var(--ort)}.pauseov p{color:var(--mu);margin:10px auto 0;max-width:30ch;line-height:1.5}
+#hostBar{display:flex;gap:10px;margin-top:6px}#hostBar[hidden]{display:none}#hostBar button{margin:0}
