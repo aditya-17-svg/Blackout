@@ -95,6 +95,7 @@ button.btn.o{background:transparent;color:var(--ylt);box-shadow:inset 0 0 0 2px 
  <div class="card" style="margin:10px 0 0"><div id="info"></div></div>
  <div class="row"><div class="st"><b id="gt">00:00</b><span>TIMER</span></div><div class="st"><b id="gd">0 m</b><span>DISTANCE</span></div><div class="st"><b id="gk">0</b><span>KCAL</span></div></div>
  <button class="btn o" id="tag" type="button" style="display:none">Tag nearby hider</button>
+ <button class="btn o" id="gpsb" type="button">Move with my GPS</button>
 </div>
 <div id="end"><div style="max-width:340px;width:100%"><span class="pill" id="eTag">ROUND OVER</span><h1 id="eTitle" class="g" style="margin:14px 0 6px"></h1><p class="mu" id="eSub"></p><div class="row"><div class="st"><b id="eD">0</b><span>METRES</span></div><div class="st"><b id="eK">0</b><span>KCAL</span></div></div><button class="btn" id="again" type="button" style="margin-top:16px">Play again</button></div></div>
 </div>
@@ -103,6 +104,7 @@ button.btn.o{background:transparent;color:var(--ylt);box-shadow:inset 0 0 0 2px 
 const $=i=>document.getElementById(i),R=Math.random,A='#F4AE52',B='#D4621A',D='#2A1A0E';
 const DUR=150,LEN=DUR/4,SHR=10,ST=[420,290,180,100],FINAL=ST[3],MLAT=110540;
 const Q=new URLSearchParams(location.search),MET={run:9.8,walk:3.8,ride:7.5}[Q.get('mode')]||9.8;
+let useGps=false,wid=null;
 let role='hider',map,layer,c0,MLNG,zone,me={x:0,y:0},tgt=null,bots=[],run=false,t=0,last=0,dist=0,outT=0,nextPing=20,mk={},pm=[];
 const ll=(x,y)=>[c0[0]+y/MLAT,c0[1]+x/MLNG],xy=(p)=>({x:(p.lng-c0[1])*MLNG,y:(p.lat-c0[0])*MLAT});
 const toast=m=>{const e=$('toast');e.textContent=m;e.classList.add('on');setTimeout(()=>e.classList.remove('on'),2300)};
@@ -129,8 +131,8 @@ function begin(){MLNG=111320*Math.cos(c0[0]*Math.PI/180);show('game');
  L.circle(c0,{radius:FINAL,color:D,weight:5,opacity:.5,fillOpacity:0,interactive:false}).addTo(map);
  L.circle(c0,{radius:FINAL,color:A,weight:3,dashArray:'8 8',fillOpacity:0,interactive:false}).addTo(map);
  L.marker(ll(0,FINAL),{icon:L.divIcon({className:'zl',html:'<span>FINAL SAFE ZONE</span>',iconSize:[0,0]}),interactive:false}).addTo(map);
- map.on('click',e=>{if(run)tgt=xy(e.latlng)});
- me={x:0,y:0};tgt=null;t=0;dist=0;outT=0;nextPing=20;pm.forEach(x=>x.remove());pm=[];
+ map.on('click',e=>{if(run&&!useGps)tgt=xy(e.latlng)});
+ useGps=false;if(wid!=null)navigator.geolocation.clearWatch(wid);$('gpsb').textContent='Move with my GPS';me={x:0,y:0};tgt=null;t=0;dist=0;outT=0;nextPing=20;pm.forEach(x=>x.remove());pm=[];
  const spawn=()=>{const g=R()*6.28,d=110+R()*140;return{x:Math.cos(g)*d,y:Math.sin(g)*d,tx:0,ty:0,tt:0,tagged:false}};
  bots=role==='hider'?[spawn()]:[spawn(),spawn()];
  mk.me=puck(ll(0,0),role==='hider'?A:B);mk.bots=bots.map(b=>puck(ll(b.x,b.y),role==='hider'?B:A));
@@ -147,8 +149,13 @@ function zoneTimer(){ // PUBG-style countdown
  if(i===3)return['','<small>FINAL ZONE</small><b>Stay in the dotted ring</b>'];
  if(into<st)return[st-into<=10?' warn':'','<small>ZONE SHRINKS IN</small><b>'+mmss(st-into)+'</b>'];
  return[' go','<small>ZONE CLOSING</small><b>'+mmss(LEN-into)+'</b><i style="width:'+Math.round((into-st)/SHR*100)+'%"></i>']}
+$('gpsb').onclick=()=>{ // your point follows your real phone GPS instead of taps
+ if(useGps){useGps=false;navigator.geolocation.clearWatch(wid);$('gpsb').textContent='Move with my GPS';return}
+ if(!navigator.geolocation)return toast('GPS is not available');
+ let prev=null;wid=navigator.geolocation.watchPosition(p=>{useGps=true;tgt=null;$('gpsb').textContent='Using your GPS · tap to stop';
+  const x=(p.coords.longitude-c0[1])*MLNG,y=(p.coords.latitude-c0[0])*MLAT;if(prev)dist+=Math.hypot(x-prev.x,y-prev.y);prev={x,y};me.x=x;me.y=y},()=>toast('GPS blocked'),{enableHighAccuracy:true,maximumAge:1000})};
 function loop(now){if(!run)return;const dt=Math.min(.1,(now-last)/1000);last=now;t+=dt;const r=radius();
- if(tgt){const px=me.x,py=me.y;const d=step(me,tgt.x,tgt.y,role==='hider'?6:5,dt);dist+=Math.hypot(me.x-px,me.y-py);if(d<1.5)tgt=null}
+ if(tgt&&!useGps){const px=me.x,py=me.y;const d=step(me,tgt.x,tgt.y,role==='hider'?6:5,dt);dist+=Math.hypot(me.x-px,me.y-py);if(d<1.5)tgt=null}
  bots.forEach(b=>{if(b.tagged)return;if(role==='hider')step(b,me.x,me.y,4.6+t/60,dt);else{b.tt-=dt;if(b.tt<=0){const g=R()*6.28,d=R()*(r-25);b.tx=Math.cos(g)*d;b.ty=Math.sin(g)*d;b.tt=3+R()*3}step(b,b.tx,b.ty,3,dt)}});
  if(role==='hider'&&Math.hypot(bots[0].x-me.x,bots[0].y-me.y)<14)return end(false,'Caught!','The seeker got you after '+Math.round(t)+' s');
  if(Math.hypot(me.x,me.y)>r){outT+=dt;if(outT>8)return end(false,'Out of the zone','You stayed outside the circle too long')}else outT=Math.max(0,outT-dt);
