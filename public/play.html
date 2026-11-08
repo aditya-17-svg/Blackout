@@ -85,7 +85,7 @@
 <section id="game" class="scr">
   <div class="top"><span id="role" class="chip a"></span><b id="clock"></b></div>
   <div id="banner" class="banner"></div>
-  <div id="map"></div>
+  <div id="mapWrap"><div id="map"></div><div id="pauseOv" class="pauseov" hidden><div><b>Game paused</b><p id="pauseTxt"></p></div></div></div>
   <div class="card" id="infoCard"><div id="info"></div></div>
   <div class="row" id="statsRow">
     <div class="st"><b id="tm">00:00</b><span>TIMER</span></div>
@@ -94,6 +94,7 @@
   </div>
   <div id="modes"><span class="chip a" data-m="run">Run</span><span class="chip" data-m="walk">Walk</span><span class="chip" data-m="ride">Ride</span></div>
   <button id="tagBtn" type="button" style="display:none">Tag a hider</button>
+  <div class="row" id="hostBar" hidden><button class="o" id="pauseBtn" type="button">Pause game</button><button class="o" id="endBtn" type="button">End game</button></div>
 </section>
 
 <section id="end" class="scr"><div class="res">
