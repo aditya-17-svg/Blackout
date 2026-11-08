@@ -1,10 +1,11 @@
 import { sb, confirmed } from './supa.js';
+import { createPoints } from './markers.js';
 
 const $ = (i) => document.getElementById(i);
 const MET = { run: 9.8, walk: 3.8, ride: 7.5 };
 const DEFAULTS = { roundMin: 45, pingMin: 5, headMin: 3, zoneM: 840, finalM: 200, shrink: true };
 let uid, myName = 'Player', gid, game, players = {}, tags = {}, mode = 'run', skew = 0, poll, chan;
-let map, zone, me, myMarker, others = [], dist = 0, lastPos, lastSend = 0, loop, finished = false, outT = 0, pendingShown = '', lastPing = '', startedMap = false;
+let map, zone, me, pts, watchId = null, follow = true, firstFix = true, lastGpsErr = 0, dist = 0, lastPos, lastSend = 0, loop, finished = false, outT = 0, pendingShown = '', lastPing = '', startedMap = false;
 
 /* ---------- helpers ---------- */
 const toast = (m) => { const e = $('toast'); e.textContent = m; e.classList.add('on'); setTimeout(() => e.classList.remove('on'), 2600); };
@@ -20,7 +21,8 @@ const freeHiders = () => hiders().filter((p) => p.status !== 'tagged');
 const nowMs = () => Date.now() + skew; // server-corrected clock
 const rl = () => ({ ...DEFAULTS, ...(game.rules || {}) });
 const startMs = () => Date.parse(game.started_at);
-const elapsed = () => (nowMs() - startMs()) / 1000;
+const isPaused = () => !!(game && game.paused_at);
+const elapsed = () => ((game.paused_at ? Date.parse(game.paused_at) : nowMs()) - startMs()) / 1000; // the clock freezes while paused
 const myRole = () => players[uid] && players[uid].role;
 const amTagged = () => players[uid] && players[uid].status === 'tagged';
 const fail = (e, m) => { console.error(e); toast(m || 'Something went wrong. Try again.'); };
@@ -163,8 +165,7 @@ const BASES = {
   Dark: [ES + 'Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxNativeZoom: 16, maxZoom: 20, attribution: 'Tiles &copy; Esri' }, '#1C1C1E', ES + 'Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}'],
   Satellite: [ES + 'World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxNativeZoom: 19, maxZoom: 20, attribution: 'Imagery &copy; Esri' }, '#222', null],
 };
-const dot = (ll, color) => L.marker(ll, { icon: L.divIcon({ className: 'puck', html: '<i style="background:' + color + '"></i>', iconSize: [24, 24] }) }).addTo(map);
-const clear = () => { others.forEach((m) => m.remove()); others = []; };
+const who = (id) => { const p = players[id]; return { name: p ? p.name : 'Player', role: p ? p.role : 'seeker' }; };
 const gc = () => [game.center_lat, game.center_lng];
 function buildMap() {
   map = L.map('map', { zoomControl: false }).setView(gc(), 15);
@@ -175,6 +176,21 @@ function buildMap() {
   const ctl = L.control({ position: 'topright' });
   ctl.onAdd = () => { const b = L.DomUtil.create('button', 'mapbtn'); b.type = 'button'; b.setAttribute('aria-label', 'Change map style'); b.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3 3 8l9 5 9-5-9-5Z"/><path d="m3 13 9 5 9-5"/></svg>'; L.DomEvent.disableClickPropagation(b); b.onclick = () => { const n = names[(names.indexOf(cur) + 1) % names.length]; setBase(n); toast(n + ' map'); }; return b; };
   ctl.addTo(map);
+  pts = createPoints(map, { now: nowMs });
+  // recenter button: the map follows you until you drag it
+  const lc = L.control({ position: 'topright' });
+  lc.onAdd = () => {
+    const b = L.DomUtil.create('button', 'locbtn on'); b.type = 'button'; b.setAttribute('aria-label', 'Follow my position');
+    b.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3.2" fill="currentColor"/><circle cx="12" cy="12" r="8"/><path d="M12 1v3M12 20v3M1 12h3M20 12h3"/></svg>';
+    L.DomEvent.disableClickPropagation(b);
+    b.onclick = () => { follow = true; b.classList.add('on'); const p = pts.mePos(); if (p) map.setView(p, Math.max(map.getZoom(), 16)); };
+    map.on('dragstart', () => { follow = false; b.classList.remove('on'); });
+    return b;
+  };
+  lc.addTo(map);
+  const lg = L.control({ position: 'bottomleft' });
+  lg.onAdd = () => { const d = L.DomUtil.create('div', 'legend'); d.innerHTML = '<span><i style="background:#D4621A"></i>Seekers</span><span><i style="background:#F4AE52"></i>Hiders</span>'; return d; };
+  lg.addTo(map);
   const fit = () => map.invalidateSize(); addEventListener('resize', fit); addEventListener('orientationchange', () => setTimeout(fit, 300)); setTimeout(fit, 200);
   const zc = L.control({ position: 'topleft' }); zc.onAdd = () => { const d = L.DomUtil.create('div', 'zpill'); d.id = 'zpill'; return d; }; zc.addTo(map);
   if (rl().shrink) { const fr = Math.min(rl().finalM, rl().zoneM); // the final safe zone stays fixed on the map
@@ -192,17 +208,17 @@ function radius() {
 }
 
 /* ---------- live game ---------- */
-async function loadLive() { // hiders see the seekers live
-  if (!map || myRole() !== 'hider') return;
-  const { data } = await sb.from('live_positions').select('lat,lng').eq('game_id', gid); if (!data) return;
-  clear(); data.forEach((d) => others.push(dot([d.lat, d.lng], '#D4621A')));
+async function loadLive() { // seekers are visible live to everyone in the game
+  if (!map || !pts) return;
+  const { data } = await sb.from('live_positions').select('user_id,lat,lng,updated_at').eq('game_id', gid); if (!data) return;
+  pts.syncLive(data, who, uid);
 }
 async function loadPings() { // seekers only see hiders when the server releases a ping
-  if (!map || myRole() !== 'seeker') return;
+  if (!map || !pts || myRole() !== 'seeker') return;
   const { data } = await sb.from('pings').select('taken_at,hiders').eq('game_id', gid).maybeSingle();
   if (!data || data.taken_at === lastPing) return;
   const first = lastPing === ''; lastPing = data.taken_at;
-  clear(); (data.hiders || []).forEach((h) => others.push(dot([h.lat, h.lng], '#F4AE52')));
+  pts.showPings(data.hiders || [], Date.parse(data.taken_at));
   if (!first || nowMs() - Date.parse(data.taken_at) < 20000) toast('PING! Hiders located');
 }
 function startGame() {
@@ -210,18 +226,21 @@ function startGame() {
   const role = myRole();
   $('role').textContent = role.toUpperCase(); $('role').style.background = role === 'seeker' ? 'var(--or)' : 'var(--yl)';
   buildMap();
-  navigator.geolocation.watchPosition((p) => {
+  firstFix = true; follow = true;
+  watchId = navigator.geolocation.watchPosition((p) => { // your solid point follows your phone's GPS
     if (finished) return;
     me = { lat: p.coords.latitude, lng: p.coords.longitude };
-    if (!myMarker) myMarker = dot(me, role === 'seeker' ? '#D4621A' : '#F4AE52'); else myMarker.setLatLng(me);
-    if (lastPos) { const d = map.distance(lastPos, me); if (d > 2) dist += d; }
+    pts.setMe(me.lat, me.lng, p.coords.accuracy, role, myName);
+    if (firstFix) { firstFix = false; map.setView([me.lat, me.lng], Math.max(map.getZoom(), 16)); }
+    else if (follow) map.panTo([me.lat, me.lng], { animate: true, duration: 0.9 });
+    if (lastPos) { const d = map.distance(lastPos, me); if (d > 2 && p.coords.accuracy <= 60) dist += d; }
     lastPos = me;
-    if (!amTagged() && Date.now() - lastSend > 4000) { // location sharing stops once you are tagged
+    if (!amTagged() && !isPaused() && Date.now() - lastSend > 4000) { // sharing stops when you are tagged or the game is paused
       lastSend = Date.now(); const row = { game_id: gid, user_id: uid, lat: me.lat, lng: me.lng, updated_at: new Date().toISOString() };
       sb.from('locations').upsert(row).then(() => {});
       if (role === 'seeker') sb.from('live_positions').upsert(row).then(() => {});
     }
-  }, () => toast('Location blocked'), { enableHighAccuracy: true });
+  }, (err) => { const n = Date.now(); if (n - lastGpsErr > 20000) { lastGpsErr = n; toast(err && err.code === 1 ? 'Location blocked. Allow location to play' : 'GPS signal is weak'); } }, { enableHighAccuracy: true, maximumAge: 1000, timeout: 20000 });
   loadLive(); loadPings();
   $('tagBtn').style.display = role === 'seeker' ? 'block' : 'none';
   loop = setInterval(tick, 1000); tick();
@@ -235,19 +254,23 @@ function tick() {
   const kc = Math.round((MET[mode] * 70 * t) / 3600);
   $('tm').textContent = mmss(t); $('kc').textContent = kc; $('ds').textContent = Math.round(dist); $('clock').textContent = mmss(end - t);
   const out = me && map.distance(gc(), me) > rad;
-  if (role === 'hider' && !amTagged() && t > hs) { // zone penalty: warn, then count as tagged
+  if (role === 'hider' && !amTagged() && t > hs && !isPaused()) { // zone penalty: warn, then count as tagged
     outT = out ? outT + 1 : Math.max(0, outT - 1);
     if (outT >= 120) { sb.rpc('tag_self', { g: gid }).then(() => loadPlayers()); toast('You stayed outside the zone: counted as tagged'); outT = 0; }
   }
   let banner = '';
-  if (t < hs) banner = role === 'seeker' ? 'Hold still: hiders are hiding. ' + mmss(hs - t) : 'Head start: go hide! ' + mmss(hs - t);
+  if (isPaused()) banner = 'Game paused. Waiting for the host to resume.';
+  else if (t < hs) banner = role === 'seeker' ? 'Hold still: hiders are hiding. ' + mmss(hs - t) : 'Head start: go hide! ' + mmss(hs - t);
   else if (amTagged()) banner = 'You are tagged. You can watch the rest of the round.';
   else if (out) banner = role === 'hider' ? 'Outside the zone! Back in ' + Math.max(0, 120 - outT) + ' s or you are tagged' : 'You are outside the zone';
   setBanner(banner, t < hs);
   const free = freeHiders().length, np = game.next_ping_at ? Date.parse(game.next_ping_at) : null, next = np ? Math.max(0, Math.round((np - nowMs()) / 1000)) : 0;
   if (role === 'seeker') $('info').innerHTML = (np ? '<span class="yl">NEXT PING</span> in ' + mmss(Math.max(next, t < hs ? hs - t : 0)) : '<span class="yl">PINGS OFF</span>') + ' · hiders free ' + free;
   else $('info').innerHTML = '<span class="or">SEEKER LIVE</span> on your map · hiders free ' + free;
-  $('tagBtn').disabled = t < hs;
+  const pz = isPaused(); $('tagBtn').disabled = t < hs || pz;
+  $('pauseOv').hidden = !pz; $('pauseTxt').textContent = game.host === uid ? 'The clock, zone and pings are stopped. Press Resume when everyone is ready.' : 'The host stopped the game. The clock, zone and pings are on hold.';
+  $('hostBar').hidden = game.host !== uid; $('pauseBtn').textContent = pz ? 'Resume game' : 'Pause game';
+  if (pts) pts.fade();
   const zp = $('zpill'); // PUBG-style zone timer
   if (zp) {
     const seg = (end - hs) / 4, sh = Math.min(30, seg / 2), tt = t - hs, i = Math.floor(tt / seg), into = tt - i * seg, st = seg - sh;
@@ -260,6 +283,14 @@ function tick() {
     zp.className = cls; zp.innerHTML = html;
   }
 }
+
+/* ---------- stop / resume / end (host only) ---------- */
+$('pauseBtn').onclick = async () => { const { error } = await sb.rpc(isPaused() ? 'resume_game' : 'pause_game', { g: gid }); if (error) fail(error); else { await loadGame(); toast(isPaused() ? 'Game paused for everyone' : 'Game resumed'); } };
+$('endBtn').onclick = () => sheet((s) => {
+  s.appendChild(el('h2', '', 'End the game?')); s.appendChild(el('p', '', 'This ends the round for everyone. There is no winner.'));
+  const y = el('button', '', 'Yes, end the game'); y.onclick = async () => { closeSheet(); const { error } = await sb.rpc('end_game', { g: gid }); if (error) fail(error); else loadGame(); };
+  const n = el('button', 'o', 'Keep playing'); n.style.marginTop = '8px'; n.onclick = closeSheet; s.appendChild(y); s.appendChild(n);
+});
 
 /* ---------- tagging: seeker claims, hider confirms ---------- */
 $('tagBtn').onclick = () => sheet((s) => {
@@ -289,10 +320,11 @@ function onTags() {
 /* ---------- results (saved to the player database) ---------- */
 async function finish(winner) {
   if (finished) return; finished = true; clearInterval(loop); loop = null; clearInterval(poll); closeSheet();
-  const role = myRole(), won = (winner === 'seekers') === (role === 'seeker');
+  if (watchId != null) navigator.geolocation.clearWatch(watchId); if (pts) { pts.destroy(); pts = null; }
+  const role = myRole(), won = winner ? (winner === 'seekers') === (role === 'seeker') : false;
   const t = Math.min(elapsed(), rl().roundMin * 60);
-  $('eTitle').textContent = winner === 'seekers' ? 'Seekers win!' : 'Hiders win!';
-  $('eSub').textContent = won ? 'Your side won this round.' : 'Better luck next round.';
+  $('eTitle').textContent = !winner ? 'Game ended' : winner === 'seekers' ? 'Seekers win!' : 'Hiders win!';
+  $('eSub').textContent = !winner ? 'The host ended the game.' : won ? 'Your side won this round.' : 'Better luck next round.';
   $('eTag').textContent = won ? 'VICTORY' : 'ROUND OVER';
   const kc = Math.round((MET[mode] * 70 * t) / 3600);
   $('eD').textContent = Math.round(dist); $('eK').textContent = kc; $('eT').textContent = Math.round(t / 60);
