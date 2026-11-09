@@ -1,9 +1,9 @@
 import { sb, confirmed } from './supa.js';
 import { createPoints } from './markers.js';
+import { rulesForm, normalize, DEFAULTS } from './rules.js';
 
 const $ = (i) => document.getElementById(i);
 const MET = { run: 9.8, walk: 3.8, ride: 7.5 };
-const DEFAULTS = { roundMin: 45, pingMin: 5, headMin: 3, zoneM: 840, finalM: 200, shrink: true };
 let uid, myName = 'Player', gid, game, players = {}, tags = {}, mode = 'run', skew = 0, poll, chan;
 let started = false;
 let map, zone, me, pts, watchId = null, follow = true, firstFix = true, lastGpsErr = 0, dist = 0, lastPos, lastSend = 0, loop, finished = false, outT = 0, pendingShown = '', lastPing = '', startedMap = false;
@@ -11,7 +11,7 @@ let map, zone, me, pts, watchId = null, follow = true, firstFix = true, lastGpsE
 /* ---------- helpers ---------- */
 const toast = (m) => { const e = $('toast'); e.textContent = m; e.classList.add('on'); setTimeout(() => e.classList.remove('on'), 2600); };
 const show = (id) => document.querySelectorAll('.scr').forEach((s) => s.classList.toggle('on', s.id === id));
-const pos = () => new Promise((res, rej) => navigator.geolocation.getCurrentPosition((p) => res({ lat: p.coords.latitude, lng: p.coords.longitude }), rej, { enableHighAccuracy: true }));
+const pos = () => new Promise((res, rej) => navigator.geolocation.getCurrentPosition((p) => res({ lat: p.coords.latitude, lng: p.coords.longitude }), rej, { timeout: 10000, maximumAge: 60000 }));
 const pad = (n) => String(n).padStart(2, '0');
 const mmss = (s) => { s = Math.max(0, Math.round(s)); return pad(Math.floor(s / 60)) + ':' + pad(s % 60); };
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }; // textContent only: names are never parsed as HTML
@@ -20,7 +20,7 @@ const closeSheet = () => $('sheet').classList.remove('on');
 const hiders = () => Object.values(players).filter((p) => p.role === 'hider');
 const freeHiders = () => hiders().filter((p) => p.status !== 'tagged');
 const nowMs = () => Date.now() + skew; // server-corrected clock
-const rl = () => ({ ...DEFAULTS, ...(game.rules || {}) });
+const rl = () => normalize(game.rules || {});
 const startMs = () => Date.parse(game.started_at);
 const isPaused = () => !!(game && game.paused_at);
 const elapsed = () => ((game.paused_at ? Date.parse(game.paused_at) : nowMs()) - startMs()) / 1000; // the clock freezes while paused
@@ -67,33 +67,42 @@ async function saveName() {
   if (n.length >= 2 && n !== myName) { myName = n; await sb.from('profiles').update({ display_name: n }).eq('id', uid); }
   return myName;
 }
+const loading = (msg) => { $('loadMsg').textContent = msg || ''; $('loading').classList.toggle('on', !!msg); };
 $('create').onclick = async () => {
+  if ($('loading').classList.contains('on')) return;
+  loading('Finding your location...');
   try {
-    const p = await pos(); await saveName();
+    const p = await pos(); loading('Creating your game...'); await saveName();
     for (let i = 0; i < 4; i++) {
       const code = Math.random().toString(36).slice(2, 8).toUpperCase();
-      const { data, error } = await sb.from('games').insert({ code, host: uid, center_lat: p.lat, center_lng: p.lng, rules: DEFAULTS }).select().single();
-      if (!error) { gid = data.id; return enter(); }
+      const { data, error } = await sb.from('games').insert({ code, host: uid, center_lat: p.lat, center_lng: p.lng, rules: normalize(DEFAULTS) }).select().single();
+      if (!error) { gid = data.id; await enter(); return; }
       if (error.code !== '23505') throw error; // 23505 = code already used, try another
     }
-  } catch (e) { if (e && e.code === 1) toast('Allow location to create a game'); else fail(e); }
+  } catch (e) { if (e && e.code === 1) toast('Allow location to create a game'); else if (e && e.code === 3) toast('Could not find your location. Check your GPS and try again.'); else fail(e); }
+  finally { loading(''); }
 };
 $('join').onclick = async () => {
+  if ($('loading').classList.contains('on')) return;
   const code = $('code').value.trim().toUpperCase();
   if (code.length < 4) return toast('Type the join code');
-  const { data, error } = await sb.from('games').select('id,status').eq('code', code).maybeSingle();
-  if (error) return fail(error);
-  if (!data) return toast('No game with that code');
-  gid = data.id; await saveName(); enter();
+  loading('Joining the game...');
+  try {
+    const { data, error } = await sb.from('games').select('id,status').eq('code', code).maybeSingle();
+    if (error) return fail(error);
+    if (!data) return toast('No game with that code');
+    gid = data.id; await saveName(); await enter();
+  } finally { loading(''); }
 };
 async function enter() {
   try {
     const t0 = Date.now(), { data: sn } = await sb.rpc('server_now');
     if (sn) skew = Date.parse(sn) - (t0 + Date.now()) / 2;
     await sb.from('game_players').upsert({ game_id: gid, user_id: uid, name: myName, role: 'hider' }, { onConflict: 'game_id,user_id', ignoreDuplicates: true });
-    show('lobby');
     await loadPlayers(); // players first: the game screen needs to know your role
     await Promise.all([loadGame(), loadTags()]);
+    if (!started) show('lobby'); // the lobby appears only once everything is loaded
+    renderLobby();
     // live updates; the 3 second refresh below is a safety net if Realtime is not enabled
     const f = (t) => 'game_id=eq.' + gid;
     chan = sb.channel('g' + gid)
@@ -108,7 +117,7 @@ async function enter() {
 }
 async function loadGame() {
   const { data } = await sb.from('games').select('*').eq('id', gid).maybeSingle(); if (!data) return;
-  const was = game && game.status; game = data; renderLobby();
+  const prevRound = game ? game.round : null; game = data; if (prevRound !== null && game.round !== prevRound) restartLocal(); renderLobby();
   if (game.status === 'live' && !started && !finished && myRole()) startGame();
   if (game.status === 'over' && loop) finish(game.winner);
 }
@@ -120,22 +129,12 @@ $('share').onclick = async () => {
 };
 
 /* ---------- lobby + host rules ---------- */
-function readRules() { return { roundMin: +$('r-round').value, pingMin: +$('r-ping').value, headMin: +$('r-head').value, zoneM: +$('r-zone').value, finalM: Math.min(+$('r-final').value, +$('r-zone').value), shrink: $('r-shrink').checked }; }
-function paintRules(r) {
-  $('v-round').textContent = r.roundMin < 60 ? r.roundMin + ' min' : Math.floor(r.roundMin / 60) + ' h ' + (r.roundMin % 60 ? r.roundMin % 60 + ' min' : '');
-  $('v-ping').textContent = r.pingMin ? r.pingMin + ' min' : 'Off';
-  $('v-head').textContent = r.headMin ? r.headMin + ' min' : 'None';
-  $('v-zone').textContent = r.zoneM >= 1000 ? (r.zoneM / 1000).toFixed(1) + ' km' : r.zoneM + ' m';
-  $('v-final').textContent = r.finalM + ' m';
-  $('finalRow').style.display = r.shrink ? 'block' : 'none';
-  $('pOut').setAttribute('r', (r.zoneM / 3000) * 92 + 4); $('pIn').setAttribute('r', r.shrink ? Math.max(3, (r.finalM / 3000) * 92) : 0);
-}
-function setInputs(r) { $('r-round').value = r.roundMin; $('r-ping').value = r.pingMin; $('r-head').value = r.headMin; $('r-zone').value = r.zoneM; $('r-final').value = r.finalM; $('r-shrink').checked = r.shrink; }
 let rt, rulesInit = false;
-['r-round', 'r-ping', 'r-head', 'r-zone', 'r-final', 'r-shrink'].forEach((id) => ($(id).oninput = () => {
-  const r = readRules(); paintRules(r);
-  clearTimeout(rt); rt = setTimeout(() => { if (game && game.host === uid) sb.from('games').update({ rules: r }).eq('id', gid).then(() => {}); }, 450);
-}));
+const rf = rulesForm(DEFAULTS, { onChange: (r) => {
+  clearTimeout(rt);
+  rt = setTimeout(() => { if (game && game.host === uid && game.status === 'lobby') sb.from('games').update({ rules: r }).eq('id', gid).then(() => {}); }, 450);
+} });
+$('rulesForm').appendChild(rf.el);
 function renderLobby() {
   if (!game) return;
   const host = game.host === uid;
@@ -148,35 +147,63 @@ function renderLobby() {
     list.appendChild(row);
   });
   $('start').style.display = host ? 'block' : 'none'; $('lhint').style.display = host ? 'none' : 'block';
-  $('rulesBox').classList.toggle('ro', !host);
-  const r = { ...DEFAULTS, ...(game.rules || {}) };
-  if (host ? !rulesInit : true) { setInputs(r); rulesInit = true; }
-  paintRules(host ? readRules() : r);
+  $('rulesBox').classList.toggle('ro', !host); rf.setReadonly(!host);
+  if (host ? !rulesInit : true) { rf.set(game.rules || DEFAULTS); rulesInit = true; }
 }
 $('start').onclick = async () => {
   if (!Object.values(players).some((p) => p.role === 'seeker')) return toast('Pick a seeker first');
   if (hiders().length < 1) return toast('You need at least one hider');
-  const { error } = await sb.rpc('start_game', { g: gid, r: readRules() });
+  const { error } = await sb.rpc('start_game', { g: gid, r: rf.get() });
   if (error) fail(error, error.message.includes('seeker') ? 'Pick a seeker first' : undefined); else loadGame();
 };
 
 /* ---------- map ---------- */
 const ES = 'https://server.arcgisonline.com/ArcGIS/rest/services/';
+const esri = (svc, o = {}) => [ES + svc + '/MapServer/tile/{z}/{y}/{x}', { maxNativeZoom: 19, maxZoom: 20, attribution: 'Tiles &copy; Esri', ...o }];
 const BASES = {
-  Standard: [ES + 'World_Street_Map/MapServer/tile/{z}/{y}/{x}', { maxNativeZoom: 19, maxZoom: 20, attribution: 'Tiles &copy; Esri' }, '#E9E7E1', null],
-  Dark: [ES + 'Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxNativeZoom: 16, maxZoom: 20, attribution: 'Tiles &copy; Esri' }, '#1C1C1E', ES + 'Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}'],
-  Satellite: [ES + 'World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxNativeZoom: 19, maxZoom: 20, attribution: 'Imagery &copy; Esri' }, '#222', null],
+  Streets: { bg: '#E9E7E1', sw: 'linear-gradient(135deg,#F4F1EA 50%,#FFFFFF 50%)', layers: [esri('World_Street_Map')] },
+  Light: { bg: '#EFEFEF', sw: '#E4E4E4', layers: [esri('Canvas/World_Light_Gray_Base', { maxNativeZoom: 16 }), esri('Canvas/World_Light_Gray_Reference', { maxNativeZoom: 16 })] },
+  Dark: { bg: '#1C1C1E', sw: '#2B2B2E', layers: [esri('Canvas/World_Dark_Gray_Base', { maxNativeZoom: 16 }), esri('Canvas/World_Dark_Gray_Reference', { maxNativeZoom: 16 })] },
+  Satellite: { bg: '#222', sw: 'linear-gradient(135deg,#2F4A2B,#6E5E3C)', layers: [esri('World_Imagery', { attribution: 'Imagery &copy; Esri' })] },
+  Hybrid: { bg: '#222', sw: 'linear-gradient(135deg,#2F4A2B 50%,#D4621A 50%)', layers: [esri('World_Imagery', { attribution: 'Imagery &copy; Esri' }), esri('Reference/World_Boundaries_and_Places')] },
+  Terrain: { bg: '#E8E4D5', sw: 'linear-gradient(135deg,#D9E3C3,#E8D9B5)', layers: [esri('World_Topo_Map')] },
+  OpenStreetMap: { bg: '#E9E7E1', sw: 'linear-gradient(135deg,#C9E2B4 50%,#F2EFE9 50%)', layers: [['https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' }]] },
 };
+const LEGACY = { Standard: 'Streets' };
 const who = (id) => { const p = players[id]; return { name: p ? p.name : 'Player', role: p ? p.role : 'seeker' }; };
 const gc = () => [game.center_lat, game.center_lng];
 function buildMap() {
   map = L.map('map', { zoomControl: false }).setView(gc(), 15);
-  const names = Object.keys(BASES); let cur = 'Standard', layer, layer2;
-  try { const sv = localStorage.getItem('mf_map'); if (BASES[sv]) cur = sv; } catch (e) {}
-  const setBase = (n) => { cur = n; if (layer) layer.remove(); if (layer2) layer2.remove(); layer = L.tileLayer(BASES[n][0], BASES[n][1]).addTo(map); layer.bringToBack(); layer2 = BASES[n][3] ? L.tileLayer(BASES[n][3], BASES[n][1]).addTo(map) : null; map.getContainer().style.background = BASES[n][2]; try { localStorage.setItem('mf_map', n); } catch (e) {} };
+  const names = Object.keys(BASES); let cur = 'Streets', tiles = [];
+  try { const sv = localStorage.getItem('mf_map'); const m = LEGACY[sv] || sv; if (BASES[m]) cur = m; } catch (e) {}
+  const setBase = (n) => {
+    cur = n; tiles.forEach((l) => l.remove());
+    tiles = BASES[n].layers.map((l) => L.tileLayer(l[0], l[1]).addTo(map)); tiles[0].bringToBack();
+    map.getContainer().style.background = BASES[n].bg; try { localStorage.setItem('mf_map', n); } catch (e) {}
+  };
   setBase(cur);
+  // a pop-up menu of map styles in the top-right corner
   const ctl = L.control({ position: 'topright' });
-  ctl.onAdd = () => { const b = L.DomUtil.create('button', 'mapbtn'); b.type = 'button'; b.setAttribute('aria-label', 'Change map style'); b.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3 3 8l9 5 9-5-9-5Z"/><path d="m3 13 9 5 9-5"/></svg>'; L.DomEvent.disableClickPropagation(b); b.onclick = () => { const n = names[(names.indexOf(cur) + 1) % names.length]; setBase(n); toast(n + ' map'); }; return b; };
+  ctl.onAdd = () => {
+    const box = L.DomUtil.create('div', 'mapmenu');
+    const b = L.DomUtil.create('button', 'mapbtn', box); b.type = 'button'; b.setAttribute('aria-label', 'Map style'); b.setAttribute('aria-haspopup', 'true'); b.setAttribute('aria-expanded', 'false');
+    b.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3 3 8l9 5 9-5-9-5Z"/><path d="m3 13 9 5 9-5"/></svg>';
+    const menu = L.DomUtil.create('div', 'mmenu', box); menu.hidden = true; menu.setAttribute('role', 'menu');
+    const head = document.createElement('p'); head.textContent = 'MAP STYLE'; menu.appendChild(head);
+    const items = {};
+    const paintMenu = () => names.forEach((n) => { items[n].classList.toggle('on', n === cur); items[n].setAttribute('aria-checked', n === cur); items[n].querySelector('.ck').textContent = n === cur ? '\u2713' : ''; });
+    const close = () => { menu.hidden = true; b.setAttribute('aria-expanded', 'false'); };
+    names.forEach((n) => {
+      const it = L.DomUtil.create('button', 'mi', menu); it.type = 'button'; it.setAttribute('role', 'menuitemradio');
+      const sw = document.createElement('i'); sw.style.background = BASES[n].sw; it.appendChild(sw); it.appendChild(document.createTextNode(n));
+      const ck = document.createElement('span'); ck.className = 'ck'; it.appendChild(ck);
+      it.onclick = () => { setBase(n); paintMenu(); close(); toast(n + ' map'); }; items[n] = it;
+    });
+    b.onclick = () => { if (menu.hidden) { menu.hidden = false; b.setAttribute('aria-expanded', 'true'); paintMenu(); } else close(); };
+    L.DomEvent.disableClickPropagation(box); L.DomEvent.disableScrollPropagation(box);
+    map.on('click', close); document.addEventListener('pointerdown', (e) => { if (!box.contains(e.target)) close(); }); document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+    return box;
+  };
   ctl.addTo(map);
   pts = createPoints(map, { now: nowMs });
   // recenter button: the map follows you until you drag it
@@ -195,15 +222,15 @@ function buildMap() {
   lg.addTo(map);
   const fit = () => map.invalidateSize(); addEventListener('resize', fit); addEventListener('orientationchange', () => setTimeout(fit, 300)); setTimeout(fit, 200);
   const zc = L.control({ position: 'topleft' }); zc.onAdd = () => { const d = L.DomUtil.create('div', 'zpill'); d.id = 'zpill'; return d; }; zc.addTo(map);
-  if (rl().shrink) { const fr = Math.min(rl().finalM, rl().zoneM); // the final safe zone stays fixed on the map
+  if (rl().shrink) { const fr = Math.min(rl().finalM, rl().zoneM) / 2; // the final safe zone stays fixed on the map
     L.circle(gc(), { radius: fr, color: '#2A1A0E', weight: 5, opacity: 0.45, fillOpacity: 0, interactive: false }).addTo(map);
     L.circle(gc(), { radius: fr, color: '#F4AE52', weight: 3, dashArray: '8 8', fillOpacity: 0, interactive: false }).addTo(map); }
   zone = L.circle(gc(), { radius: radius(), color: '#D4621A', weight: 4, fillOpacity: 0.04 }).addTo(map);
 }
 function radius() {
-  const r = rl(); if (!r.shrink) return r.zoneM;
+  const r = rl(); if (!r.shrink) return r.zoneM / 2;
   const hs = r.headMin * 60, seg = (r.roundMin * 60 - hs) / 4, tt = Math.max(0, elapsed() - hs);
-  const rad = [0, 1, 2, 3].map((i) => r.zoneM + (Math.min(r.finalM, r.zoneM) - r.zoneM) * (i / 3));
+  const rad = [0, 1, 2, 3].map((i) => (r.zoneM + (Math.min(r.finalM, r.zoneM) - r.zoneM) * (i / 3)) / 2); // sizes are diameters
   const i = Math.min(3, Math.floor(tt / seg)), n = Math.min(3, i + 1), into = tt - i * seg, sh = Math.min(30, seg / 2), st = seg - sh;
   if (into <= st || i === n) return rad[i];
   return rad[i] + (rad[n] - rad[i]) * Math.min(1, (into - st) / sh);
@@ -273,6 +300,7 @@ function tick() {
   const pz = isPaused(); $('tagBtn').disabled = t < hs || pz;
   $('pauseOv').hidden = !pz; $('pauseTxt').textContent = game.host === uid ? 'The clock, zone and pings are stopped. Press Resume when everyone is ready.' : 'The host stopped the game. The clock, zone and pings are on hold.';
   $('hostBar').hidden = game.host !== uid; $('pauseBtn').textContent = pz ? 'Resume game' : 'Pause game';
+  $('rulesBtn').disabled = !pz; $('rulesBtn').textContent = pz ? 'Edit rules' : 'Edit rules (pause first)';
   if (pts) pts.fade();
   const zp = $('zpill'); // PUBG-style zone timer
   if (zp) {
@@ -287,13 +315,33 @@ function tick() {
   }
 }
 
-/* ---------- stop / resume / end (host only) ---------- */
+/* ---------- stop / resume / edit rules / restart / end (host only) ---------- */
 $('pauseBtn').onclick = async () => { const { error } = await sb.rpc(isPaused() ? 'resume_game' : 'pause_game', { g: gid }); if (error) fail(error); else { await loadGame(); toast(isPaused() ? 'Game paused for everyone' : 'Game resumed'); } };
+$('rulesBtn').onclick = () => {
+  if (!isPaused()) return toast('Pause the game first to change the rules');
+  sheet((s) => {
+    s.appendChild(el('h2', '', 'Game rules')); s.appendChild(el('p', '', 'Changes take effect when you resume.'));
+    const f = rulesForm(game.rules || DEFAULTS); s.appendChild(f.el);
+    const save = el('button', '', 'Save rules'); save.onclick = async () => { const { error } = await sb.rpc('update_rules', { g: gid, r: f.get() }); closeSheet(); if (error) fail(error); else { await loadGame(); toast('Rules saved. Press Resume when ready.'); } };
+    const cancel = el('button', 'o', 'Cancel'); cancel.style.marginTop = '8px'; cancel.onclick = closeSheet; s.appendChild(save); s.appendChild(cancel);
+  });
+};
+$('restartBtn').onclick = () => sheet((s) => {
+  s.appendChild(el('h2', '', 'Restart the round?')); s.appendChild(el('p', '', 'The timer and zone start again from the beginning, every hider is free again and all tags are cleared. Roles and rules stay.'));
+  const y = el('button', '', 'Yes, restart'); y.onclick = async () => { closeSheet(); const { error } = await sb.rpc('restart_game', { g: gid }); if (error) fail(error); else { await loadGame(); toast('Round restarted'); } };
+  const n = el('button', 'o', 'Cancel'); n.style.marginTop = '8px'; n.onclick = closeSheet; s.appendChild(y); s.appendChild(n);
+});
 $('endBtn').onclick = () => sheet((s) => {
   s.appendChild(el('h2', '', 'End the game?')); s.appendChild(el('p', '', 'This ends the round for everyone. There is no winner.'));
   const y = el('button', '', 'Yes, end the game'); y.onclick = async () => { closeSheet(); const { error } = await sb.rpc('end_game', { g: gid }); if (error) fail(error); else loadGame(); };
   const n = el('button', 'o', 'Keep playing'); n.style.marginTop = '8px'; n.onclick = closeSheet; s.appendChild(y); s.appendChild(n);
 });
+// a restarted round: forget everything from the old one
+function restartLocal() {
+  dist = 0; outT = 0; lastPing = ''; pendingShown = ''; lastSend = 0; tags = {}; seenTag.clear();
+  if (pts) pts.showPings([], nowMs());
+  toast('The host restarted the round');
+}
 
 /* ---------- tagging: seeker claims, hider confirms ---------- */
 $('tagBtn').onclick = () => sheet((s) => {
