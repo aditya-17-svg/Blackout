@@ -27,6 +27,7 @@ create table if not exists public.games (
   next_ping_at timestamptz,
   winner text check (winner in ('hiders','seekers')),
   paused_at timestamptz,
+  round int not null default 1,
   created_at timestamptz not null default now()
 );
 
@@ -171,23 +172,65 @@ begin
   update game_players set role = r where game_id = g and user_id = u;
 end $$;
 
+-- one place that checks every rule (zone sizes are DIAMETERS in metres, pings are in seconds)
+create or replace function public.clean_rules(r jsonb) returns jsonb
+language plpgsql immutable as $$
+declare zone int; fin int; ping int;
+begin
+  zone := least(greatest(coalesce((r->>'zoneM')::numeric, 1000), 50), 10000)::int;
+  fin  := least(greatest(coalesce((r->>'finalM')::numeric, 100), 15), zone)::int;
+  ping := case when r ? 'pingSec' then coalesce((r->>'pingSec')::numeric, 0)::int
+              when r ? 'pingMin' then (coalesce((r->>'pingMin')::numeric, 0) * 60)::int
+              else 300 end;
+  ping := case when ping <= 0 then 0 else least(greatest(ping, 15), 3600) end;
+  return jsonb_build_object(
+    'roundMin', least(greatest(coalesce((r->>'roundMin')::numeric, 45), 5), 480)::int,
+    'pingSec', ping,
+    'headMin', least(greatest(coalesce((r->>'headMin')::numeric, 3), 0), 60)::int,
+    'zoneM', zone, 'finalM', fin, 'shrink', coalesce((r->>'shrink')::boolean, true));
+end $$;
+
+-- the host can change the rules, but only while the game is paused
+create or replace function public.update_rules(g uuid, r jsonb) returns void
+language plpgsql security definer set search_path = public as $$
+declare c jsonb; pa timestamptz;
+begin
+  select paused_at into pa from games where id = g and host = auth.uid() and status = 'live';
+  if pa is null then raise exception 'pause the game first'; end if;
+  c := public.clean_rules(r);
+  update games set rules = c,
+    next_ping_at = case when (c->>'pingSec')::int > 0 then pa + make_interval(secs => (c->>'pingSec')::int) else null end
+  where id = g;
+end $$;
+
+-- start the round again from zero: everyone is free again, positions and tags are cleared
+create or replace function public.restart_game(g uuid) returns void
+language plpgsql security definer set search_path = public as $$
+declare c jsonb;
+begin
+  select rules into c from games where id = g and host = auth.uid() and status = 'live';
+  if c is null then raise exception 'not allowed'; end if;
+  c := public.clean_rules(c);
+  update game_players set status = 'free' where game_id = g;
+  delete from tags where game_id = g;
+  delete from pings where game_id = g;
+  delete from locations where game_id = g;
+  delete from live_positions where game_id = g;
+  update games set rules = c, started_at = now(), paused_at = null, winner = null, round = round + 1,
+    next_ping_at = case when (c->>'pingSec')::int > 0 then now() + make_interval(mins => (c->>'headMin')::int, secs => (c->>'pingSec')::int) else null end
+  where id = g;
+end $$;
+
 create or replace function public.start_game(g uuid, r jsonb) returns public.games
 language plpgsql security definer set search_path = public as $$
-declare res public.games; ping int; head int;
+declare res public.games; c jsonb;
 begin
   if not exists (select 1 from games where id = g and host = auth.uid() and status = 'lobby') then raise exception 'not allowed'; end if;
   if not exists (select 1 from game_players where game_id = g and role = 'seeker') then raise exception 'need a seeker'; end if;
   if not exists (select 1 from game_players where game_id = g and role = 'hider') then raise exception 'need a hider'; end if;
-  ping := least(greatest(coalesce((r->>'pingMin')::int, 5), 0), 30);
-  head := least(greatest(coalesce((r->>'headMin')::int, 3), 0), 30);
-  update games set
-    rules = jsonb_build_object(
-      'roundMin', least(greatest(coalesce((r->>'roundMin')::int, 45), 5), 180), 'pingMin', ping, 'headMin', head,
-      'zoneM', least(greatest(coalesce((r->>'zoneM')::int, 840), 200), 3000),
-      'finalM', least(greatest(coalesce((r->>'finalM')::int, 200), 100), 1500),
-      'shrink', coalesce((r->>'shrink')::boolean, true)),
-    status = 'live', started_at = now(),
-    next_ping_at = case when ping > 0 then now() + make_interval(mins => head + ping) else null end
+  c := public.clean_rules(r);
+  update games set rules = c, status = 'live', started_at = now(), paused_at = null,
+    next_ping_at = case when (c->>'pingSec')::int > 0 then now() + make_interval(mins => (c->>'headMin')::int, secs => (c->>'pingSec')::int) else null end
   where id = g returning * into res;
   return res;
 end $$;
@@ -286,7 +329,7 @@ begin
       from game_players p join locations l on l.game_id = p.game_id and l.user_id = p.user_id
       where p.game_id = g.id and p.role = 'hider' and p.status = 'free'
     on conflict (game_id) do update set taken_at = excluded.taken_at, hiders = excluded.hiders;
-    update games set next_ping_at = now() + make_interval(mins => greatest(1, coalesce((g.rules->>'pingMin')::int, 5))) where id = g.id;
+    update games set next_ping_at = now() + make_interval(secs => greatest(15, coalesce((g.rules->>'pingSec')::int, (g.rules->>'pingMin')::int * 60, 300))) where id = g.id;
   end loop;
 end $$;
 
@@ -299,8 +342,8 @@ revoke execute on all functions in schema public from public, anon;
 grant execute on function public.server_now(), public.set_role(uuid, uuid, text), public.start_game(uuid, jsonb), public.claim_tag(uuid, uuid),
   public.answer_tag(uuid, boolean), public.tag_self(uuid), public.finish_game(uuid, text),
   public.save_result(uuid, text, boolean, numeric, numeric, int), public.is_member(uuid), public.is_seeker(uuid),
-  public.pause_game(uuid), public.resume_game(uuid), public.end_game(uuid) to authenticated;
-revoke execute on function public.release_pings(), public.cleanup_old(), public.handle_new_user() from authenticated;
+  public.pause_game(uuid), public.resume_game(uuid), public.end_game(uuid), public.update_rules(uuid, jsonb), public.restart_game(uuid) to authenticated;
+revoke execute on function public.release_pings(), public.cleanup_old(), public.handle_new_user(), public.clean_rules(jsonb) from authenticated;
 
 -- ============ REALTIME ============
 do $$ declare t text; begin
@@ -313,5 +356,5 @@ end $$;
 -- ============ SCHEDULES (needs the pg_cron extension) ============
 -- If this part errors: Dashboard > Database > Extensions > enable "pg_cron", then run these two lines again.
 create extension if not exists pg_cron;
-select cron.schedule('blackout-release-pings', '* * * * *', 'select public.release_pings()');
+select cron.schedule('blackout-release-pings', '5 seconds', 'select public.release_pings()');  -- if this errors, use '* * * * *' (once a minute)
 select cron.schedule('blackout-cleanup', '17 3 * * *', 'select public.cleanup_old()');
