@@ -46,6 +46,7 @@
 </head><body>
 <div id="gmap" aria-hidden="true"></div><div id="gscrim"></div>
 <div id="toast"></div>
+<div id="loading" class="loading" role="status" aria-live="polite"><div class="ld"><span class="lr"><i></i></span><b>BLACKOUT</b><p id="loadMsg"></p></div></div>
 <div id="sheet" class="sheet"><div class="in" id="sheetIn"></div></div>
 <header class="hdr"><a class="logo" href="index.html"><svg width="36" height="36" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="15" fill="#2A1A0E"/><path fill-rule="evenodd" fill="#F4AE52" transform="translate(-1 8) scale(.78)" d="M11 14H27C34 14 38 18 38 23.5C38 28 35.5 30.5 32 31.5C36.5 32.5 40 35.5 40 41C40 47 35.5 50 28 50H11ZM19 20.5V27.5H26C29.5 27.5 31 26 31 24C31 22 29.5 20.5 26 20.5ZM19 34.5V43.5H27C31 43.5 32.5 42 32.5 39C32.5 36 31 34.5 27 34.5Z"/><circle cx="45.5" cy="33" r="10" fill="none" stroke="#D4621A" stroke-width="7"/></svg>BLACKOUT</a><span id="themeSlot"></span></header>
 
@@ -69,13 +70,7 @@
   <div>
     <div class="card" id="rulesBox">
       <p class="mono">GAME RULES</p>
-      <svg id="prev" viewBox="0 0 200 200" role="img" aria-label="Zone preview"><circle cx="100" cy="100" r="96" style="fill:var(--inp);stroke:var(--line)"/><circle id="pOut" cx="100" cy="100" r="60" style="fill:color-mix(in srgb,var(--B) 12%,transparent);stroke:var(--B);stroke-width:3"/><circle id="pIn" cx="100" cy="100" r="20" style="fill:none;stroke:var(--A);stroke-width:2;stroke-dasharray:6 5"/></svg>
-      <label class="rg"><span>Round length <b id="v-round"></b></span><input type="range" id="r-round" min="5" max="180" step="5"></label>
-      <label class="rg"><span>Ping every <b id="v-ping"></b></span><input type="range" id="r-ping" min="0" max="30" step="1"></label>
-      <label class="rg"><span>Head start <b id="v-head"></b></span><input type="range" id="r-head" min="0" max="30" step="1"></label>
-      <label class="rg"><span>Zone size (width) <b id="v-zone"></b></span><input type="range" id="r-zone" min="200" max="3000" step="20"></label>
-      <label class="rg chk"><input type="checkbox" id="r-shrink"><span>Zone shrinks during the round</span></label>
-      <label class="rg" id="finalRow"><span>Final zone size <b id="v-final"></b></span><input type="range" id="r-final" min="100" max="1500" step="20"></label>
+      <div id="rulesForm"></div>
     </div>
     <button id="start" type="button" style="display:none">Start game</button>
     <p class="mu hint" id="lhint">Waiting for the host to start...</p>
@@ -94,7 +89,7 @@
   </div>
   <div id="modes"><span class="chip a" data-m="run">Run</span><span class="chip" data-m="walk">Walk</span><span class="chip" data-m="ride">Ride</span></div>
   <button id="tagBtn" type="button" style="display:none">Tag a hider</button>
-  <div class="row" id="hostBar" hidden><button class="o" id="pauseBtn" type="button">Pause game</button><button class="o" id="endBtn" type="button">End game</button></div>
+  <div id="hostBar" hidden><button class="o" id="pauseBtn" type="button">Pause game</button><button class="o" id="rulesBtn" type="button">Edit rules</button><button class="o" id="restartBtn" type="button">Restart round</button><button class="o" id="endBtn" type="button">End game</button></div>
 </section>
 
 <section id="end" class="scr"><div class="res">
