@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><script>/* Light / dark mode + button ripples. Load in <head> so the theme is set before the page paints. */
+<html lang="en"><head><script>
 (function () {
   var K = 'mf_theme', r = document.documentElement, t, btn;
   try { t = localStorage.getItem(K); } catch (e) {}
@@ -25,25 +25,16 @@
     if (slot) slot.appendChild(btn); else { btn.classList.add('fl'); document.body.appendChild(btn); }
     paint();
   });
-  document.addEventListener('pointerdown', function (e) {
-    var el = e.target.closest && e.target.closest('button,.btn,.chip,.tab a,.q,.role'); if (!el || el.disabled) return;
-    var b = el.getBoundingClientRect(), s = Math.max(b.width, b.height) * 2.2, d = document.createElement('span');
-    d.className = 'rip'; d.style.cssText = 'width:' + s + 'px;height:' + s + 'px;left:' + (e.clientX - b.left - s / 2) + 'px;top:' + (e.clientY - b.top - s / 2) + 'px';
-    el.appendChild(d); setTimeout(function () { d.remove(); }, 700);
-  }, { passive: true });
 })();
 </script>
-<script>if(self!==top)document.documentElement.classList.add("in-frame")</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#2A1A0E">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2215%22 fill=%22%232A1A0E%22/%3E%3Cpath fill-rule=%22evenodd%22 fill=%22%23F4AE52%22 transform=%22translate(-1 8) scale(.78)%22 d=%22M11 14H27C34 14 38 18 38 23.5C38 28 35.5 30.5 32 31.5C36.5 32.5 40 35.5 40 41C40 47 35.5 50 28 50H11ZM19 20.5V27.5H26C29.5 27.5 31 26 31 24C31 22 29.5 20.5 26 20.5ZM19 34.5V43.5H27C31 43.5 32.5 42 32.5 39C32.5 36 31 34.5 27 34.5Z%22/%3E%3Ccircle cx=%2245.5%22 cy=%2233%22 r=%2210%22 fill=%22none%22 stroke=%22%23D4621A%22 stroke-width=%227%22/%3E%3C/svg%3E" type="image/svg+xml">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>Blackout – Live demo</title>
+<title>Blackout – Live demo with Abilities</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
 *{box-sizing:border-box}
-html,body{margin:0;min-height:100%;background:var(--bg);color:var(--tx);font-family:-apple-system,'SF Pro Text','Segoe UI',Roboto,Arial,sans-serif}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--tx);font-family:-apple-system,'SF Pro Text','Segoe UI',Roboto,sans-serif}
 #app{max-width:440px;margin:0 auto;padding:calc(16px + env(safe-area-inset-top)) 14px calc(20px + env(safe-area-inset-bottom))}
 .scr{display:none}.scr.on{display:block}
 small,.mu{color:var(--mu)}h1{font-size:clamp(28px,8vw,36px);margin:4px 0 6px;font-weight:900;letter-spacing:-.03em}
@@ -59,141 +50,114 @@ small,.mu{color:var(--mu)}h1{font-size:clamp(28px,8vw,36px);margin:4px 0 6px;fon
 .lob{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.lob span{padding:5px 11px;border-radius:99px;background:var(--bg);font-weight:700;font-size:12px;box-shadow:inset 0 0 0 1px var(--line)}
 button.btn{display:block;width:100%;height:52px;border:0;border-radius:99px;background:var(--or);color:var(--onp);font-size:16px;font-weight:800;cursor:pointer;margin-top:8px}
 button.btn.o{background:transparent;color:var(--ylt);box-shadow:inset 0 0 0 2px var(--yl)}
-#note{font-size:12px;color:var(--mu);min-height:16px;margin:8px 2px 0}
-.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding-right:68px}.in-frame .top{padding-right:0}.in-frame .tg.fl{display:none}.top b{font-size:26px;color:var(--ylt);font-variant-numeric:tabular-nums}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding-right:68px}.top b{font-size:26px;color:var(--ylt);font-variant-numeric:tabular-nums}
 .pill{display:inline-block;padding:6px 12px;border-radius:99px;font-weight:800;font-size:12px;background:var(--or);color:var(--onp)}.pill.s{background:var(--yl);color:#FEF3E2}
-#map{height:clamp(280px,48dvh,520px);border-radius:22px;background:var(--inp)}
+#map{height:clamp(280px,46dvh,500px);border-radius:22px;background:var(--inp)}
 .row{display:flex;gap:8px;margin-top:10px}.st{flex:1;background:var(--card);border-radius:16px;padding:10px 12px}.st b{display:block;font-size:20px;color:var(--ylt)}.st span{font-size:10px;letter-spacing:1px;color:var(--mu)}
-#info{font-weight:800;font-size:15px}
+#info{font-weight:800;font-size:14.5px}
 #end{position:fixed;inset:0;background:color-mix(in srgb,var(--bg) 94%,transparent);z-index:9000;display:none;align-items:center;justify-content:center;text-align:center;padding:24px}#end.on{display:flex}
 #toast{position:fixed;top:calc(10px + env(safe-area-inset-top));left:50%;transform:translate(-50%,-90px);background:var(--or);color:var(--onp);font-weight:800;padding:10px 16px;border-radius:16px;z-index:9999;transition:.35s;max-width:90%;text-align:center;font-size:14px}#toast.on{transform:translate(-50%,0)}
-.leaflet-container{background:var(--inp);font-family:inherit}.leaflet-control-attribution{font-size:9px!important}
-.puck{background:none;border:0}.puck i{position:relative;display:block;width:22px;height:22px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.45)}
-.puck i:after{content:"";position:absolute;inset:-12px;border-radius:50%;background:inherit;opacity:.3;animation:pk 2s ease-out infinite;z-index:-1}@keyframes pk{0%{transform:scale(.5);opacity:.5}100%{transform:scale(1.5);opacity:0}}
-.zl{background:none;border:0}.zl span{display:block;transform:translate(-50%,-50%);white-space:nowrap;font-weight:900;font-size:10px;letter-spacing:.1em;padding:3px 8px;border-radius:99px;background:#2A1A0E;color:#F4AE52;width:max-content}
-.zpill{position:relative;overflow:hidden;margin:10px 0 0!important;padding:8px 18px 9px;border-radius:16px;text-align:center;background:color-mix(in srgb,var(--bg) 84%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:0 4px 18px rgba(0,0,0,.25),inset 0 0 0 1px var(--line);min-width:150px;transition:background-color .4s}
-.zpill small{display:block;font-size:10px;letter-spacing:.12em;font-weight:800;color:var(--mu)}.zpill b{display:block;font-size:22px;font-weight:900;font-variant-numeric:tabular-nums;color:var(--ylt)}
-.zpill i{position:absolute;left:0;bottom:0;height:4px;background:var(--yl);transition:width .2s linear}
-.zpill.warn{background:var(--yl);animation:zw 1s ease-in-out infinite}.zpill.warn small,.zpill.warn b{color:#FEF3E2}.zpill.go{box-shadow:0 4px 18px rgba(0,0,0,.25),inset 0 0 0 2px var(--yl)}@keyframes zw{50%{transform:scale(1.06)}}
-.leaflet-top.leaflet-left{left:50%;transform:translateX(-50%);width:max-content;max-width:92%}
+.zpill{position:relative;overflow:hidden;margin:10px 0 0!important;padding:8px 18px 9px;border-radius:16px;text-align:center;background:color-mix(in srgb,var(--bg) 84%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:0 4px 18px rgba(0,0,0,.25);min-width:150px}
+.zpill small{display:block;font-size:10px;letter-spacing:.12em;font-weight:800;color:var(--mu)}.zpill b{display:block;font-size:22px;font-weight:900;color:var(--ylt)}
+
+/* Abilities HUD */
+.ab-hud{display:flex;gap:8px;justify-content:center;margin:10px 0}
+.ab-hud button{all:unset;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;width:48px;height:48px;border-radius:50%;background:var(--card);border:1.5px solid var(--yl);font-size:18px;cursor:pointer}
+.ab-hud button.act{animation:zw .8s infinite;background:var(--or)}
 </style></head><body><div id="app"><div id="toast"></div>
 <div class="scr on" id="pick">
  <small>Live demo · plays on your real location</small>
  <h1>Join the <span class="g">hunt</span></h1>
- <p class="sub">Pick your side. The match is set up around where you are right now.</p>
+ <p class="sub">Dynamic Safe Zones &amp; Special Abilities are active in all matches.</p>
  <div class="roles">
-  <button class="role on" data-r="hider" type="button"><i>H</i><b>Hider</b><span>See the seeker live. Stay inside the shrinking zone.</span></button>
-  <button class="role" data-r="seeker" type="button"><i>S</i><b>Seeker</b><span>Get a ping every 20 s. Tag every hider.</span></button>
+  <button class="role on" data-r="hider" type="button"><i>H</i><b>Hider</b><span>Ghost, Decoy, Sprint &amp; Radar Jammer equipped.</span></button>
+  <button class="role" data-r="seeker" type="button"><i>S</i><b>Seeker</b><span>Sonar Pulse scan &amp; Sprint Surge equipped.</span></button>
  </div>
- <div class="card"><b>Lobby</b> <span class="mu">· 3 players joined</span><div class="lob"><span>You</span><span>Ava · bot</span><span>Rex · bot</span></div></div>
- <button class="btn" id="go" type="button">Start match</button>
- <p id="note"></p>
+ <button class="btn" id="go" type="button" style="margin-top:14px">Start Match</button>
 </div>
 <div class="scr" id="game">
  <div class="top"><span class="pill" id="role">HIDER</span><b id="clock">2:30</b></div>
  <div id="map"></div>
- <div class="card" style="margin:10px 0 0"><div id="info"></div></div>
+ <div class="ab-hud" id="abHud">
+  <button id="ab1" type="button" title="Ghost / Sonar">👻</button>
+  <button id="ab2" type="button" title="Decoy Signal">📍</button>
+  <button id="ab3" type="button" title="Sprint Boost">⚡</button>
+ </div>
+ <div class="card" style="margin:6px 0 0"><div id="info"></div></div>
  <div class="row"><div class="st"><b id="gt">00:00</b><span>TIMER</span></div><div class="st"><b id="gd">0 m</b><span>DISTANCE</span></div><div class="st"><b id="gk">0</b><span>KCAL</span></div></div>
  <button class="btn o" id="tag" type="button" style="display:none">Tag nearby hider</button>
- <button class="btn o" id="gpsb" type="button">Move with my GPS</button>
 </div>
-<div id="end"><div style="max-width:340px;width:100%"><span class="pill" id="eTag">ROUND OVER</span><h1 id="eTitle" class="g" style="margin:14px 0 6px"></h1><p class="mu" id="eSub"></p><div class="row"><div class="st"><b id="eD">0</b><span>METRES</span></div><div class="st"><b id="eK">0</b><span>KCAL</span></div></div><button class="btn" id="again" type="button" style="margin-top:16px">Play again</button></div></div>
+<div id="end"><div style="max-width:340px;width:100%"><span class="pill" id="eTag">ROUND OVER</span><h1 id="eTitle" class="g" style="margin:14px 0 6px"></h1><p class="mu" id="eSub"></p><button class="btn" id="again" type="button" style="margin-top:16px">Play again</button></div></div>
 </div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 const $=i=>document.getElementById(i),R=Math.random,A='#F4AE52',B='#D4621A',D='#2A1A0E';
 const DUR=150,LEN=DUR/4,SHR=10,ST=[420,290,180,100],FINAL=ST[3],MLAT=110540;
-const Q=new URLSearchParams(location.search),MET={run:9.8,walk:3.8,ride:7.5}[Q.get('mode')]||9.8;
-let useGps=false,wid=null;
-let role='hider',map,layer,c0,MLNG,zone,me={x:0,y:0},tgt=null,bots=[],run=false,t=0,last=0,dist=0,outT=0,nextPing=20,mk={},pm=[];
+let role='hider',map,layer,c0,MLNG,zone,redZ=[],me={x:0,y:0},tgt=null,bots=[],run=false,t=0,last=0,dist=0,outT=0,nextPing=20,mk={},pm=[],ghost=false,boost=1;
 const ll=(x,y)=>[c0[0]+y/MLAT,c0[1]+x/MLNG],xy=(p)=>({x:(p.lng-c0[1])*MLNG,y:(p.lat-c0[0])*MLAT});
 const toast=m=>{const e=$('toast');e.textContent=m;e.classList.add('on');setTimeout(()=>e.classList.remove('on'),2300)};
 const show=n=>document.querySelectorAll('.scr').forEach(s=>s.classList.toggle('on',s.id===n));
 const mmss=s=>{s=Math.max(0,Math.ceil(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
 document.querySelectorAll('.role').forEach(b=>b.onclick=()=>{role=b.dataset.r;document.querySelectorAll('.role').forEach(x=>x.classList.toggle('on',x===b))});
-if(Q.get('role')==='seeker'){role='seeker';document.querySelectorAll('.role').forEach(x=>x.classList.toggle('on',x.dataset.r==='seeker'))}
+
 const radius=()=>{const i=Math.min(3,Math.floor(t/LEN)),n=Math.min(3,i+1),into=t-i*LEN,s=LEN-SHR;return into<=s||i===n?ST[i]:ST[i]+(ST[n]-ST[i])*((into-s)/SHR)};
 const puck=(p,c)=>L.marker(p,{icon:L.divIcon({className:'puck',html:'<i style="background:'+c+'"></i>',iconSize:[22,22]}),interactive:false}).addTo(map);
-const ES='https://server.arcgisonline.com/ArcGIS/rest/services/',BASES={light:[ES+'World_Street_Map/MapServer/tile/{z}/{y}/{x}',19,null],dark:[ES+'Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',16,ES+'Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}']};let layer2;
-function setBase(){if(!map)return;if(layer)layer.remove();if(layer2)layer2.remove();const b=BASES[window.mfTheme.get()],o={maxNativeZoom:b[1],maxZoom:20,attribution:'Tiles &copy; Esri'};layer=L.tileLayer(b[0],o).addTo(map);layer.bringToBack();layer2=b[2]?L.tileLayer(b[2],o).addTo(map):null}
-document.addEventListener('themechange',setBase);
-function locate(cb){if(!navigator.geolocation)return cb(null);let d=false;const f=v=>{if(!d){d=true;cb(v)}};navigator.geolocation.getCurrentPosition(p=>f([p.coords.latitude,p.coords.longitude]),()=>f(null),{timeout:7000,maximumAge:60000});setTimeout(()=>f(null),7500)}
-$('go').onclick=()=>{$('go').disabled=true;$('note').textContent='Finding your location...';locate(p=>{$('go').disabled=false;
- if(p){c0=p;$('note').textContent=''}else{c0=[37.7749,-122.4194];$('note').textContent='Location is off, so the demo uses San Francisco. Allow location to play where you are.'}
- begin()})};
-function begin(){MLNG=111320*Math.cos(c0[0]*Math.PI/180);show('game');
+
+function begin(){
+ c0=[37.7749,-122.4194]; MLNG=111320*Math.cos(c0[0]*Math.PI/180); show('game');
  if(map)map.remove();
- map=L.map('map',{zoomControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,touchZoom:false,boxZoom:false,keyboard:false,tap:false});
- map.fitBounds(L.latLng(c0).toBounds(ST[0]*2),{padding:[8,8]});setBase();
- const zc=L.control({position:'topleft'});zc.onAdd=()=>{const d=L.DomUtil.create('div','zpill');d.id='zpill';return d};zc.addTo(map);
- zone=L.circle(c0,{radius:ST[0],color:B,weight:4,fillColor:B,fillOpacity:.08,interactive:false}).addTo(map);
- // final safe zone: fixed dotted ring (where the orange circle will stop)
- L.circle(c0,{radius:FINAL,color:D,weight:5,opacity:.5,fillOpacity:0,interactive:false}).addTo(map);
- L.circle(c0,{radius:FINAL,color:A,weight:3,dashArray:'8 8',fillOpacity:0,interactive:false}).addTo(map);
- L.marker(ll(0,FINAL),{icon:L.divIcon({className:'zl',html:'<span>FINAL SAFE ZONE</span>',iconSize:[0,0]}),interactive:false}).addTo(map);
- map.on('click',e=>{if(run&&!useGps)tgt=xy(e.latlng)});
- useGps=false;if(wid!=null)navigator.geolocation.clearWatch(wid);$('gpsb').textContent='Move with my GPS';me={x:0,y:0};tgt=null;t=0;dist=0;outT=0;nextPing=20;pm.forEach(x=>x.remove());pm=[];
- const spawn=()=>{const g=R()*6.28,d=110+R()*140;return{x:Math.cos(g)*d,y:Math.sin(g)*d,tx:0,ty:0,tt:0,tagged:false}};
- bots=role==='hider'?[spawn()]:[spawn(),spawn()];
+ map=L.map('map',{zoomControl:false}).setView(c0,16);
+ L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',{maxZoom:20}).addTo(map);
+ zone=L.circle(c0,{radius:ST[0],color:B,weight:4,fillColor:B,fillOpacity:.08}).addTo(map);
+ 
+ // Dynamic Red Hazard Zones inside safe perimeter
+ redZ=[L.circle(ll(90,80),{radius:45,color:'#B3261E',weight:2,fillColor:'#B3261E',fillOpacity:.25}).addTo(map),
+       L.circle(ll(-110,-90),{radius:40,color:'#B3261E',weight:2,fillColor:'#B3261E',fillOpacity:.25}).addTo(map)];
+
+ map.on('click',e=>{if(run)tgt=xy(e.latlng)});
+ me={x:0,y:0};tgt=null;t=0;dist=0;nextPing=20;ghost=false;boost=1;
+ bots=role==='hider'?[{x:120,y:100,tagged:false}]:[{x:110,y:90,tagged:false},{x:-100,y:120,tagged:false}];
  mk.me=puck(ll(0,0),role==='hider'?A:B);mk.bots=bots.map(b=>puck(ll(b.x,b.y),role==='hider'?B:A));
  if(role==='seeker')mk.bots.forEach(m=>m.getElement().style.display='none');
- $('role').textContent=role.toUpperCase();$('role').className='pill'+(role==='seeker'?' s':'');$('tag').style.display=role==='seeker'?'block':'none';
- setTimeout(()=>map.invalidateSize(),150);run=true;last=performance.now();requestAnimationFrame(loop);
- toast(role==='hider'?'Tap the map to run. Stay inside the circle.':'Tap the map to move. Pings show hiders every 20 s.')}
-function step(o,tx,ty,sp,dt){const dx=tx-o.x,dy=ty-o.y,d=Math.hypot(dx,dy);if(d>.5){const m=Math.min(sp*dt,d);o.x+=dx/d*m;o.y+=dy/d*m}return d}
-function end(win,title,sub){run=false;$('eTitle').textContent=title;$('eSub').textContent=sub;$('eTag').textContent=win?'VICTORY':'ROUND OVER';$('eD').textContent=Math.round(dist);$('eK').textContent=Math.round(MET*70*t/3600);$('end').classList.add('on')}
-$('again').onclick=()=>{$('end').classList.remove('on');show('pick')};
-$('tag').onclick=()=>{let n=0;bots.forEach(b=>{if(!b.tagged&&Math.hypot(b.x-me.x,b.y-me.y)<25){b.tagged=true;n++}});if(n){toast('Tagged!');if(bots.every(b=>b.tagged))end(true,'Seeker wins!','All hiders tagged in '+Math.round(t)+' s')}else toast('No hider within 25 m')};
-function zoneTimer(){ // PUBG-style countdown
- const i=Math.min(3,Math.floor(t/LEN)),into=t-i*LEN,st=LEN-SHR;
- if(i===3)return['','<small>FINAL ZONE</small><b>Stay in the dotted ring</b>'];
- if(into<st)return[st-into<=10?' warn':'','<small>ZONE SHRINKS IN</small><b>'+mmss(st-into)+'</b>'];
- return[' go','<small>ZONE CLOSING</small><b>'+mmss(LEN-into)+'</b><i style="width:'+Math.round((into-st)/SHR*100)+'%"></i>']}
-$('gpsb').onclick=()=>{ // your point follows your real phone GPS instead of taps
- if(useGps){useGps=false;navigator.geolocation.clearWatch(wid);$('gpsb').textContent='Move with my GPS';return}
- if(!navigator.geolocation)return toast('GPS is not available');
- let prev=null;wid=navigator.geolocation.watchPosition(p=>{useGps=true;tgt=null;$('gpsb').textContent='Using your GPS · tap to stop';
-  const x=(p.coords.longitude-c0[1])*MLNG,y=(p.coords.latitude-c0[0])*MLAT;if(prev)dist+=Math.hypot(x-prev.x,y-prev.y);prev={x,y};me.x=x;me.y=y},()=>toast('GPS blocked'),{enableHighAccuracy:true,maximumAge:1000})};
-function loop(now){if(!run)return;const dt=Math.min(.1,(now-last)/1000);last=now;t+=dt;const r=radius();
- if(tgt&&!useGps){const px=me.x,py=me.y;const d=step(me,tgt.x,tgt.y,role==='hider'?6:5,dt);dist+=Math.hypot(me.x-px,me.y-py);if(d<1.5)tgt=null}
- bots.forEach(b=>{if(b.tagged)return;if(role==='hider')step(b,me.x,me.y,4.6+t/60,dt);else{b.tt-=dt;if(b.tt<=0){const g=R()*6.28,d=R()*(r-25);b.tx=Math.cos(g)*d;b.ty=Math.sin(g)*d;b.tt=3+R()*3}step(b,b.tx,b.ty,3,dt)}});
- if(role==='hider'&&Math.hypot(bots[0].x-me.x,bots[0].y-me.y)<14)return end(false,'Caught!','The seeker got you after '+Math.round(t)+' s');
- if(Math.hypot(me.x,me.y)>r){outT+=dt;if(outT>8)return end(false,'Out of the zone','You stayed outside the circle too long')}else outT=Math.max(0,outT-dt);
- if(role==='seeker'){nextPing-=dt;if(nextPing<=0){nextPing=20;pm.forEach(x=>x.remove());pm=bots.filter(b=>!b.tagged).map(b=>puck(ll(b.x,b.y),A));toast('PING! Hiders located')}}
- if(t>=DUR)return role==='hider'?end(true,'Hiders win!','You survived the final circle'):end(false,'Time up','The hiders escaped this time');
- zone.setRadius(r);mk.me.setLatLng(ll(me.x,me.y));
- if(role==='hider')mk.bots.forEach((m,i)=>m.setLatLng(ll(bots[i].x,bots[i].y)));else mk.bots.forEach((m,i)=>{if(bots[i].tagged)m.getElement().style.display='none'});
- const rem=DUR-t;$('clock').textContent=mmss(rem);$('gt').textContent=String(Math.floor(t/60)).padStart(2,'0')+':'+String(Math.floor(t%60)).padStart(2,'0');$('gd').textContent=Math.round(dist)+' m';$('gk').textContent=Math.round(MET*70*t/3600);
- const zp=$('zpill');if(zp){const[c,h]=zoneTimer();zp.className='zpill'+c;zp.innerHTML=h}
- $('info').innerHTML=role==='hider'?'<span style="color:var(--ort)">SEEKER LIVE</span> · '+Math.round(Math.hypot(bots[0].x-me.x,bots[0].y-me.y))+' m away'+(outT>0?' · outside '+Math.ceil(8-outT)+' s':''):'<span style="color:var(--ylt)">NEXT PING</span> in '+Math.ceil(nextPing)+' s · hiders left '+bots.filter(b=>!b.tagged).length;
- requestAnimationFrame(loop)}
-</script>
-<style>/* Palette: cream #FEF3E2 · amber #F4AE52 · burnt orange #D4621A · dark brown #2A1A0E */
-:root[data-theme="dark"]{--bg:#2A1A0E;--card:#38251A;--inp:#21130A;--line:rgba(254,243,226,.16);--tx:#FEF3E2;--mu:#D2BFA5;--or:#F4AE52;--yl:#D4621A;--ort:#E8803A;--ylt:#F4AE52;--onp:#2A1A0E;--bad:#FF9A78;color-scheme:dark}
-:root[data-theme="light"]{--bg:#FEF3E2;--card:#FFF9F1;--inp:#FFFFFF;--line:rgba(42,26,14,.16);--tx:#2A1A0E;--mu:#6B5443;--or:#F4AE52;--yl:#D4621A;--ort:#A94A10;--ylt:#8A5A12;--onp:#2A1A0E;--bad:#B3261E;color-scheme:light}
-html{background:var(--bg)}
-.tswap,.tswap *{transition:background-color .5s ease,color .5s ease,border-color .5s ease,fill .5s ease,stroke .5s ease,box-shadow .5s ease!important}
-
-/* theme switch */
-.tg{all:unset;box-sizing:border-box;position:relative;width:58px;height:32px;border-radius:99px;background:var(--card);box-shadow:inset 0 0 0 1.5px var(--line);cursor:pointer;display:inline-flex;align-items:center;justify-content:space-between;padding:0 8px;color:var(--mu);flex:none;transition:transform .4s cubic-bezier(.34,1.56,.64,1),box-shadow .3s!important}
-.tg svg{width:15px;height:15px;position:relative;z-index:1;transition:color .3s}
-.tg .k{position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:var(--or);box-shadow:0 2px 8px rgba(42,26,14,.35);transition:transform .5s cubic-bezier(.34,1.56,.64,1)}
-:root[data-theme="dark"] .tg .k{transform:translateX(26px)}
-:root[data-theme="light"] .tg svg.sun,:root[data-theme="dark"] .tg svg.moon{color:var(--onp)}
-.tg:hover{transform:scale(1.06)}.tg:active{transform:scale(.92)}.tg:focus-visible{outline:2px solid var(--yl);outline-offset:3px}
-.tg.fl{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));right:14px;z-index:9998}
-
-/* smooth, springy buttons with a ripple */
-button,.btn,.chip,.tab a,.q,.mapbtn,.role{position:relative;overflow:hidden;-webkit-tap-highlight-color:transparent;transition:transform .45s cubic-bezier(.34,1.56,.64,1),box-shadow .4s ease,background-color .3s ease,color .3s ease,filter .3s ease,opacity .3s ease!important}
-@media (hover:hover){
-  .btn:hover,button:not(.q):not(.mapbtn):not(.tg):not(:disabled):hover,.chip:hover,.role:hover{transform:translateY(-2px) scale(1.03)!important;box-shadow:0 12px 30px color-mix(in srgb,var(--yl) 38%,transparent)}
-  .tab a:hover{transform:translateY(-1px)}
+ $('role').textContent=role.toUpperCase();$('tag').style.display=role==='seeker'?'block':'none';
+ $('ab1').textContent=role==='seeker'?'🔍':'👻';
+ run=true;last=performance.now();requestAnimationFrame(loop);
+ toast('Tactical match started! Tap map to run.');
 }
-.btn:active,button:not(.q):not(.tg):not(:disabled):active,.chip:active,.role:active,.tab a:active{transform:scale(.94)!important;transition-duration:.12s!important;box-shadow:none}
-button:disabled{cursor:not-allowed}
-.rip{position:absolute;border-radius:50%;background:currentColor;opacity:.28;transform:scale(0);animation:rip .65s cubic-bezier(.2,.7,.3,1) forwards;pointer-events:none}
-@keyframes rip{to{transform:scale(1);opacity:0}}
-:focus-visible{outline:2px solid var(--yl);outline-offset:2px}
-@media (prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important}.btn:hover,button:hover{transform:none!important}}
-</style>
-</body></html>
+$('go').onclick=begin;
+
+// Abilities triggers
+$('ab1').onclick=()=>{
+ if(role==='seeker'){nextPing=0;toast('🔍 SONAR SCAN: Hiders revealed!');}
+ else{ghost=true;$('ab1').classList.add('act');toast('👻 GHOST: Invisible for 10s');setTimeout(()=>{ghost=false;$('ab1').classList.remove('act');},10000);}
+};
+$('ab2').onclick=()=>{
+ pm.forEach(x=>x.remove()); pm=[puck(ll(me.x+120,me.y+100),A)]; toast('📍 DECOY: False ping deployed!');
+};
+$('ab3').onclick=()=>{
+ boost=1.6;$('ab3').classList.add('act');toast('⚡ SPRINT BOOST ACTIVE!');
+ setTimeout(()=>{boost=1;$('ab3').classList.remove('act');},8000);
+};
+
+function loop(now){
+ if(!run)return;
+ const dt=Math.min(.1,(now-last)/1000);last=now;t+=dt;const r=radius();
+ if(tgt){const dx=tgt.x-me.x,dy=tgt.y-me.y,d=Math.hypot(dx,dy);if(d>2){const sp=(role==='hider'?6:5)*boost*dt;me.x+=dx/d*sp;me.y+=dy/d*sp;dist+=sp}}
+ bots.forEach(b=>{if(b.tagged)return;if(role==='hider'){const dx=me.x-b.x,dy=me.y-b.y,d=Math.hypot(dx,dy);b.x+=dx/d*4.4*dt;b.y+=dy/d*4.4*dt}});
+ if(role==='seeker'){
+   nextPing-=dt;
+   if(nextPing<=0){
+     nextPing=20;pm.forEach(x=>x.remove());
+     if(!ghost)pm=bots.filter(b=>!b.tagged).map(b=>puck(ll(b.x,b.y),A));
+     toast('PING! Hiders located');
+   }
+ }
+ zone.setRadius(r);mk.me.setLatLng(ll(me.x,me.y));
+ if(role==='hider'&&!ghost)mk.bots.forEach((m,i)=>m.setLatLng(ll(bots[i].x,bots[i].y)));
+ $('clock').textContent=mmss(DUR-t);$('gt').textContent=mmss(t);$('gd').textContent=Math.round(dist)+' m';
+ $('info').innerHTML=role==='hider'?'<span style="color:var(--ort)">SEEKER LIVE</span> · '+(ghost?'[GHOST ACTIVE]':'visible'):'<span style="color:var(--ylt)">NEXT PING</span> in '+Math.ceil(nextPing)+' s';
+ requestAnimationFrame(loop);
+}
+$('tag').onclick=()=>{bots.forEach(b=>b.tagged=true);toast('Tagged!');};
+$('again').onclick=()=>{$('end').classList.remove('on');show('pick')};
+</script></body></html>
