@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-theme="light"><head><script>/* Light / dark mode + button ripples. Load in <head> so the theme is set before the page paints. */
+<html lang="en" data-theme="light"><head><script>
 (function () {
   var K = 'mf_theme', r = document.documentElement, t, btn;
   try { t = localStorage.getItem(K); } catch (e) {}
@@ -26,7 +26,7 @@
     paint();
   });
   document.addEventListener('pointerdown', function (e) {
-    var el = e.target.closest && e.target.closest('button,.btn,.chip,.tab a,.q,.role'); if (!el || el.disabled) return;
+    var el = e.target.closest && e.target.closest('button,.btn,.chip,.tab a,.q,.role,.sb-link,.ab-btn'); if (!el || el.disabled) return;
     var b = el.getBoundingClientRect(), s = Math.max(b.width, b.height) * 2.2, d = document.createElement('span');
     d.className = 'rip'; d.style.cssText = 'width:' + s + 'px;height:' + s + 'px;left:' + (e.clientX - b.left - s / 2) + 'px;top:' + (e.clientY - b.top - s / 2) + 'px';
     el.appendChild(d); setTimeout(function () { d.remove(); }, 700);
@@ -46,6 +46,17 @@
 </head><body>
 <div id="gmap" aria-hidden="true"></div><div id="gscrim"></div>
 <div id="toast"></div>
+
+<!-- Incoming Game Request Banner -->
+<div id="inviteBanner" class="inv-banner" hidden>
+  <div class="inv-box">
+    <span class="inv-icon">⚡</span>
+    <div class="inv-txt"><b id="invFrom">Player</b> wants to play Blackout with you!</div>
+    <div class="inv-act"><button id="invAccept" class="btn-sm">Join Game</button><button id="invDecline" class="btn-sm o">✕</button></div>
+  </div>
+</div>
+
+<!-- Blackout Logo Loading Animation -->
 <div id="loading" class="loading" role="status" aria-live="polite">
   <div class="ld">
     <div class="ld-logo">
@@ -61,34 +72,98 @@
     <p id="loadMsg"></p>
   </div>
 </div>
-<div id="sheet" class="sheet"><div class="in" id="sheetIn"></div></div>
-<header class="hdr"><a class="logo" href="index.html"><svg width="36" height="36" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="15" fill="#2A1A0E"/><path fill-rule="evenodd" fill="#F4AE52" transform="translate(-1 8) scale(.78)" d="M11 14H27C34 14 38 18 38 23.5C38 28 35.5 30.5 32 31.5C36.5 32.5 40 35.5 40 41C40 47 35.5 50 28 50H11ZM19 20.5V27.5H26C29.5 27.5 31 26 31 24C31 22 29.5 20.5 26 20.5ZM19 34.5V43.5H27C31 43.5 32.5 42 32.5 39C32.5 36 31 34.5 27 34.5Z"/><circle cx="45.5" cy="33" r="10" fill="none" stroke="#D4621A" stroke-width="7"/></svg>BLACKOUT</a><span id="themeSlot"></span></header>
 
+<!-- Left Sidebar Navigation -->
+<div id="sbOverlay" class="sb-overlay"></div>
+<aside id="sidebar" class="sidebar">
+  <div class="sb-top">
+    <div class="sb-prof">
+      <span class="sb-avatar" id="sbAvatar">P</span>
+      <div><b id="sbName">Player</b><span class="sb-sub" id="sbRole">Agent</span></div>
+    </div>
+    <button id="sbClose" class="sb-x" type="button" aria-label="Close menu">✕</button>
+  </div>
+  <nav class="sb-nav">
+    <button class="sb-link on" data-target="home" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Home / Play</button>
+    <button class="sb-link" id="sbFriendsBtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Friends & Invites <span class="sb-badge" id="friendBadge" hidden>0</span></button>
+    <button class="sb-link" id="sbAbilitiesBtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>Special Abilities</button>
+    <button class="sb-link" id="sbRulesBtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>Rules &amp; Dynamic Zones</button>
+  </nav>
+  <div class="sb-bot">
+    <button class="sb-link out" id="sbOut" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>Sign out</button>
+  </div>
+</aside>
+
+<!-- Friends Modal -->
+<div id="friendsModal" class="sp-modal" hidden>
+  <div class="sp-box fr-box">
+    <div class="sp-head">
+      <div><h2>Friends &amp; Squad</h2><p>Send friend requests &amp; invite friends to games</p></div>
+      <button class="sp-close" id="frClose" type="button">✕</button>
+    </div>
+    <div class="fr-add">
+      <input id="frInput" type="text" placeholder="Friend display name..." maxlength="14">
+      <button id="frAddBtn" class="btn-sm" type="button">Add Friend</button>
+    </div>
+    <div class="fr-section">
+      <div class="mono">PENDING REQUESTS (<span id="frReqCount">0</span>)</div>
+      <div id="frReqList" class="fr-list"></div>
+    </div>
+    <div class="fr-section">
+      <div class="mono">FRIENDS LIST (<span id="frCount">0</span>)</div>
+      <div id="frList" class="fr-list"></div>
+    </div>
+  </div>
+</div>
+
+<div id="sheet" class="sheet"><div class="in" id="sheetIn"></div></div>
+
+<header class="hdr">
+  <div style="display:flex;align-items:center;gap:14px">
+    <button id="menuBtn" class="menu-btn" type="button" aria-label="Open menu">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+    </button>
+    <a class="logo" href="index.html"><svg width="36" height="36" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="15" fill="#2A1A0E"/><path fill-rule="evenodd" fill="#F4AE52" transform="translate(-1 8) scale(.78)" d="M11 14H27C34 14 38 18 38 23.5C38 28 35.5 30.5 32 31.5C36.5 32.5 40 35.5 40 41C40 47 35.5 50 28 50H11ZM19 20.5V27.5H26C29.5 27.5 31 26 31 24C31 22 29.5 20.5 26 20.5ZM19 34.5V43.5H27C31 43.5 32.5 42 32.5 39C32.5 36 31 34.5 27 34.5Z"/><circle cx="45.5" cy="33" r="10" fill="none" stroke="#D4621A" stroke-width="7"/></svg>BLACKOUT</a>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <button id="hdrFriends" class="hdr-btn" type="button" aria-label="Friends">👥<span id="hdrBadge" class="h-badge" hidden></span></button>
+    <span id="themeSlot"></span>
+  </div>
+</header>
+
+<!-- SCREEN 1: HOME / PLAY (Primary landing page after login) -->
 <section id="home" class="scr on"><div class="hg">
-  <div class="hl"><p class="eb">REAL STREETS. REAL STRATEGY.</p><h1>Ready to <span>hunt?</span></h1><p class="lead">Create a game, share the code and the chase begins. Or join a friend’s game with their code.</p><div id="hstats"></div></div>
+  <div class="hl"><p class="eb">REAL STREETS. REAL STRATEGY.</p><h1>Ready to <span>hunt?</span></h1><p class="lead">Create a game, share the code or invite your friends. Or join a friend’s game with their code.</p><div id="hstats"></div></div>
   <div class="panel">
     <label class="fl">Display name<input id="name" type="text" placeholder="Your name" maxlength="14" autocomplete="nickname"></label>
     <button id="create" type="button">Create new game</button>
     <div class="or2">or join a game</div>
     <div class="jr"><input id="code" type="text" placeholder="JOIN CODE" maxlength="6" autocapitalize="characters" autocomplete="off"><button class="o" id="join" type="button">Join</button></div>
-    <button class="lnk" id="so" type="button">Sign out</button>
+    <div style="display:flex;justify-content:space-between;margin-top:14px">
+      <button class="lnk" id="quickFriends" type="button">👥 Manage Friends</button>
+      <button class="lnk" id="so" type="button">Sign out</button>
+    </div>
   </div>
 </div></section>
 
+<!-- SCREEN 2: LOBBY -->
 <section id="lobby" class="scr"><div class="lg2">
   <div>
     <p class="eb">GAME LOBBY</p><p class="mono">SHARE THIS CODE</p><h1 id="lcode" class="code"></h1>
-    <button class="o" id="share" type="button">Share invite link</button>
+    <div style="display:flex;gap:10px;margin-bottom:18px">
+      <button class="o" id="share" type="button" style="margin:0">Share link</button>
+      <button class="o" id="inviteFriendsBtn" type="button" style="margin:0">Invite Friends</button>
+    </div>
     <h3 class="sh">Players</h3><div id="plist"></div>
   </div>
   <div>
     <div class="card" id="areaBox">
       <p class="mono">PLAY AREA</p>
-      <div class="asum"><span id="areaPrev"></span><div><b id="areaName"></b><p id="areaNote"></p></div></div>
+      <div class="asum" id="areaAsum"><span id="areaPrev"></span><div><b id="areaName"></b><p id="areaNote"></p></div></div>
       <div class="abtns" id="areaBtns"></div>
     </div>
     <div class="card" id="rulesBox">
-      <p class="mono">GAME RULES</p>
+      <p class="mono">GAME RULES &amp; DYNAMIC ZONES</p>
       <div id="rulesForm"></div>
     </div>
     <button id="start" type="button" style="display:none">Start game</button>
@@ -96,10 +171,31 @@
   </div>
 </div></section>
 
+<!-- SCREEN 3: LIVE GAME (With Dynamic Zones & Special Abilities HUD) -->
 <section id="game" class="scr">
-  <div id="mapWrap"><div id="map"></div><div id="pauseOv" class="pauseov" hidden><div><b>Game paused</b><p id="pauseTxt"></p></div></div></div>
+  <div id="mapWrap">
+    <div id="map"></div>
+    <div id="pauseOv" class="pauseov" hidden><div><b>Game paused</b><p id="pauseTxt"></p></div></div>
+  </div>
   <div class="gtop"><span id="role" class="chip a"></span><b id="clock"></b></div>
   <div id="banner" class="banner"></div>
+  
+  <!-- SPECIAL ABILITIES HUD BAR -->
+  <div id="abilitiesBar" class="ab-bar">
+    <button id="abGhost" class="ab-btn" type="button" data-ab="ghost" aria-label="Invisibility Ghost">
+      <span class="ab-icon">👻</span><span class="ab-name">Ghost</span><span class="ab-cd" id="cdGhost"></span>
+    </button>
+    <button id="abDecoy" class="ab-btn" type="button" data-ab="decoy" aria-label="Decoy Signal">
+      <span class="ab-icon">📍</span><span class="ab-name">Decoy</span><span class="ab-cd" id="cdDecoy"></span>
+    </button>
+    <button id="abBoost" class="ab-btn" type="button" data-ab="boost" aria-label="Sprint Boost">
+      <span class="ab-icon">⚡</span><span class="ab-name">Sprint</span><span class="ab-cd" id="cdBoost"></span>
+    </button>
+    <button id="abRadar" class="ab-btn" type="button" data-ab="radar" aria-label="Radar Jammer / Sonar">
+      <span class="ab-icon" id="abRadarIcon">📡</span><span class="ab-name" id="abRadarName">Jammer</span><span class="ab-cd" id="cdRadar"></span>
+    </button>
+  </div>
+
   <button id="tagBtn" class="fab" type="button" style="display:none">Tag a hider</button>
   <div id="dock" class="dock">
     <button class="grab" id="grab" type="button" aria-label="Show or hide details" aria-expanded="false"><i></i></button>
@@ -116,6 +212,7 @@
   </div>
 </section>
 
+<!-- SCREEN 4: ROUND RESULTS -->
 <section id="end" class="scr"><div class="res">
   <div class="c"><span class="chip a" id="eTag">ROUND OVER</span><h1 id="eTitle"></h1><p class="lead" id="eSub"></p></div>
   <div class="row"><div class="st"><b id="eD">0</b><span>METRES</span></div><div class="st"><b id="eK">0</b><span>KCAL</span></div><div class="st"><b id="eT">0</b><span>MINUTES</span></div></div>
@@ -123,10 +220,10 @@
   <div class="card" style="margin-top:12px"><p class="mono">RESULTS</p><div id="eList"></div></div>
   <button id="again" type="button">Back to home</button>
 </div></section>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script type="module" src="app.js"></script>
 <script>
-/* Real map background: Esri street tiles (light) and Esri dark gray tiles (dark). */
 (function(){
  var Z=14,LAT=37.8005,LNG=-122.4150,S=256,C=9,R=7,n=Math.pow(2,Z);
  var fx=(LNG+180)/360*n,fy=(1-Math.log(Math.tan(LAT*Math.PI/180)+1/Math.cos(LAT*Math.PI/180))/Math.PI)/2*n;
@@ -139,13 +236,11 @@
  document.addEventListener('themechange',load);load();
 })();
 </script>
-<style>/* Palette: cream #FEF3E2 · amber #F4AE52 · burnt orange #D4621A · dark brown #2A1A0E */
+<style>
 :root[data-theme="dark"]{--bg:#2A1A0E;--card:#38251A;--inp:#21130A;--line:rgba(254,243,226,.16);--tx:#FEF3E2;--mu:#D2BFA5;--or:#F4AE52;--yl:#D4621A;--ort:#E8803A;--ylt:#F4AE52;--onp:#2A1A0E;--bad:#FF9A78;color-scheme:dark}
 :root[data-theme="light"]{--bg:#FEF3E2;--card:#FFF9F1;--inp:#FFFFFF;--line:rgba(42,26,14,.16);--tx:#2A1A0E;--mu:#6B5443;--or:#F4AE52;--yl:#D4621A;--ort:#A94A10;--ylt:#8A5A12;--onp:#2A1A0E;--bad:#B3261E;color-scheme:light}
 html{background:var(--bg)}
 .tswap,.tswap *{transition:background-color .5s ease,color .5s ease,border-color .5s ease,fill .5s ease,stroke .5s ease,box-shadow .5s ease!important}
-
-/* theme switch */
 .tg{all:unset;box-sizing:border-box;position:relative;width:58px;height:32px;border-radius:99px;background:var(--card);box-shadow:inset 0 0 0 1.5px var(--line);cursor:pointer;display:inline-flex;align-items:center;justify-content:space-between;padding:0 8px;color:var(--mu);flex:none;transition:transform .4s cubic-bezier(.34,1.56,.64,1),box-shadow .3s!important}
 .tg svg{width:15px;height:15px;position:relative;z-index:1;transition:color .3s}
 .tg .k{position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:var(--or);box-shadow:0 2px 8px rgba(42,26,14,.35);transition:transform .5s cubic-bezier(.34,1.56,.64,1)}
@@ -153,14 +248,12 @@ html{background:var(--bg)}
 :root[data-theme="light"] .tg svg.sun,:root[data-theme="dark"] .tg svg.moon{color:var(--onp)}
 .tg:hover{transform:scale(1.06)}.tg:active{transform:scale(.92)}.tg:focus-visible{outline:2px solid var(--yl);outline-offset:3px}
 .tg.fl{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));right:14px;z-index:9998}
-
-/* smooth, springy buttons with a ripple */
-button,.btn,.chip,.tab a,.q,.mapbtn,.role{position:relative;overflow:hidden;-webkit-tap-highlight-color:transparent;transition:transform .45s cubic-bezier(.34,1.56,.64,1),box-shadow .4s ease,background-color .3s ease,color .3s ease,filter .3s ease,opacity .3s ease!important}
+button,.btn,.chip,.tab a,.q,.mapbtn,.role,.sb-link,.ab-btn{position:relative;overflow:hidden;-webkit-tap-highlight-color:transparent;transition:transform .45s cubic-bezier(.34,1.56,.64,1),box-shadow .4s ease,background-color .3s ease,color .3s ease,filter .3s ease,opacity .3s ease!important}
 @media (hover:hover){
-  .btn:hover,button:not(.q):not(.mapbtn):not(.tg):not(:disabled):hover,.chip:hover,.role:hover{transform:translateY(-2px) scale(1.03)!important;box-shadow:0 12px 30px color-mix(in srgb,var(--yl) 38%,transparent)}
+  .btn:hover,button:not(.q):not(.mapbtn):not(.tg):not(:disabled):hover,.chip:hover,.role:hover,.sb-link:hover,.ab-btn:hover{transform:translateY(-2px) scale(1.03)!important;box-shadow:0 12px 30px color-mix(in srgb,var(--yl) 38%,transparent)}
   .tab a:hover{transform:translateY(-1px)}
 }
-.btn:active,button:not(.q):not(.tg):not(:disabled):active,.chip:active,.role:active,.tab a:active{transform:scale(.94)!important;transition-duration:.12s!important;box-shadow:none}
+.btn:active,button:not(.q):not(.tg):not(:disabled):active,.chip:active,.role:active,.tab a:active,.sb-link:active,.ab-btn:active{transform:scale(.94)!important;transition-duration:.12s!important;box-shadow:none}
 button:disabled{cursor:not-allowed}
 .rip{position:absolute;border-radius:50%;background:currentColor;opacity:.28;transform:scale(0);animation:rip .65s cubic-bezier(.2,.7,.3,1) forwards;pointer-events:none}
 @keyframes rip{to{transform:scale(1);opacity:0}}
