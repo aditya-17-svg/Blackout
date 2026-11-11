@@ -68,6 +68,11 @@
     <h3 class="sh">Players</h3><div id="plist"></div>
   </div>
   <div>
+    <div class="card" id="areaBox">
+      <p class="mono">PLAY AREA</p>
+      <div class="asum"><span id="areaPrev"></span><div><b id="areaName"></b><p id="areaNote"></p></div></div>
+      <div class="abtns" id="areaBtns"></div>
+    </div>
     <div class="card" id="rulesBox">
       <p class="mono">GAME RULES</p>
       <div id="rulesForm"></div>
@@ -78,18 +83,23 @@
 </div></section>
 
 <section id="game" class="scr">
-  <div class="top"><span id="role" class="chip a"></span><b id="clock"></b></div>
-  <div id="banner" class="banner"></div>
   <div id="mapWrap"><div id="map"></div><div id="pauseOv" class="pauseov" hidden><div><b>Game paused</b><p id="pauseTxt"></p></div></div></div>
-  <div class="card" id="infoCard"><div id="info"></div></div>
-  <div class="row" id="statsRow">
-    <div class="st"><b id="tm">00:00</b><span>TIMER</span></div>
-    <div class="st"><b id="kc">0</b><span>KCAL</span></div>
-    <div class="st"><b id="ds">0</b><span>METRES</span></div>
+  <div class="gtop"><span id="role" class="chip a"></span><b id="clock"></b></div>
+  <div id="banner" class="banner"></div>
+  <button id="tagBtn" class="fab" type="button" style="display:none">Tag a hider</button>
+  <div id="dock" class="dock">
+    <button class="grab" id="grab" type="button" aria-label="Show or hide details" aria-expanded="false"><i></i></button>
+    <div class="peek"><div id="info"></div></div>
+    <div class="more">
+      <div class="row" id="statsRow">
+        <div class="st"><b id="tm">00:00</b><span>TIMER</span></div>
+        <div class="st"><b id="kc">0</b><span>KCAL</span></div>
+        <div class="st"><b id="ds">0</b><span>METRES</span></div>
+      </div>
+      <div id="modes"><span class="chip a" data-m="run">Run</span><span class="chip" data-m="walk">Walk</span><span class="chip" data-m="ride">Ride</span></div>
+      <div id="hostBar" hidden><button class="o" id="pauseBtn" type="button">Pause game</button><button class="o" id="rulesBtn" type="button">Edit rules</button><button class="o" id="restartBtn" type="button">Restart round</button><button class="o" id="endBtn" type="button">End game</button></div>
+    </div>
   </div>
-  <div id="modes"><span class="chip a" data-m="run">Run</span><span class="chip" data-m="walk">Walk</span><span class="chip" data-m="ride">Ride</span></div>
-  <button id="tagBtn" type="button" style="display:none">Tag a hider</button>
-  <div id="hostBar" hidden><button class="o" id="pauseBtn" type="button">Pause game</button><button class="o" id="rulesBtn" type="button">Edit rules</button><button class="o" id="restartBtn" type="button">Restart round</button><button class="o" id="endBtn" type="button">End game</button></div>
 </section>
 
 <section id="end" class="scr"><div class="res">
