@@ -1,6 +1,4 @@
 // Play-area shapes (circle, oval, square, triangle ...), the draw-your-own editor, and helpers.
-// Sizes: every shape has the same AREA as a circle of the chosen diameter, so shapes are fair to compare.
-// Points are in metres from the centre: [east, north]. Needs Leaflet (global L) for the editor.
 const TAU = Math.PI * 2, MLAT = 110540;
 export const SHAPES = ['Circle', 'Oval', 'Square', 'Rectangle', 'Triangle', 'Diamond', 'Pentagon', 'Hexagon', 'Octagon'];
 export const STRETCHABLE = new Set(['Oval', 'Rectangle', 'Diamond']);
@@ -15,14 +13,13 @@ export function centroid(p) {
 }
 export const equivDiameter = (p) => 2 * Math.sqrt(polyArea(p) / Math.PI);
 
-// vertices in metres for a shape at a given size (null means a true circle)
 export function getPts(a, D) {
   if (!a || a.type === 'Circle') return null;
   if (a.type === 'Custom') { if (!a.pts || a.pts.length < 3) return null; const k = D / equivDiameter(a.pts); return a.pts.map(([x, y]) => [x * k, y * k]); }
   if (!BASE[a.type]) return null;
   const s = Math.max(1, +a.stretch || 1), rot = ((+a.rot || 0) * Math.PI) / 180, c = Math.cos(rot), n = Math.sin(rot);
   let u = BASE[a.type]().map(([x, y]) => [x * s, y / s]).map(([x, y]) => [x * c - y * n, x * n + y * c]);
-  const k = Math.sqrt(Math.PI / polyArea(u)) * (D / 2); // same area as a circle of diameter D
+  const k = Math.sqrt(Math.PI / polyArea(u)) * (D / 2);
   return u.map(([x, y]) => [x * k, y * k]);
 }
 export function pip(pt, poly) {
@@ -42,8 +39,7 @@ export function randomArea() {
 }
 export const areaLabel = (a) => (a && a.type ? (a.type === 'Custom' ? 'Hand-drawn' : a.type) : 'Circle');
 
-// small picture of a shape (for the lobby)
-export function previewSvg(a, D, finalM) {
+export function previewSvg(a, D = 1000, finalM = 0) {
   const NS = 'http://www.w3.org/2000/svg', svg = document.createElementNS(NS, 'svg');
   svg.setAttribute('viewBox', '-60 -60 120 120'); svg.setAttribute('class', 'aprev'); svg.setAttribute('aria-hidden', 'true');
   const pts = getPts(a, D), sc = 48 / (D / 2) * (pts ? 0.82 : 1);
@@ -55,14 +51,65 @@ export function previewSvg(a, D, finalM) {
   return svg;
 }
 
-// ---------- the editor: pick a shape or draw your own ----------
 const h = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+
+/* Shape Pop-Up Modal (Displays all shapes clearly) */
+export function openShapeModal({ current, D = 1000, finalM = 0, onSelect, onDraw }) {
+  const modal = h('div', 'sp-modal');
+  const box = h('div', 'sp-box');
+  const head = h('div', 'sp-head');
+  head.appendChild(h('h2', '', 'Choose Shape'));
+  const x = h('button', 'sp-close', '\u00D7');
+  x.type = 'button';
+  head.appendChild(x);
+  const grid = h('div', 'sp-grid');
+
+  const curType = current && current.type ? current.type : 'Circle';
+  const list = [
+    ...SHAPES.map((s) => ({ type: s, name: s, desc: 'Equal area' })),
+    { type: 'Draw', name: 'Hand-drawn', desc: 'Draw custom corners' },
+    { type: 'Random', name: 'Random', desc: 'Surprise shape' },
+  ];
+
+  list.forEach((it) => {
+    const card = h('button', 'sp-card' + (curType === it.type ? ' on' : ''));
+    card.type = 'button';
+    const fakeArea = it.type === 'Random' ? { type: 'Hexagon', rot: 30 } : it.type === 'Draw' ? { type: 'Custom', pts: [[-40,-40],[40,-30],[20,40],[-30,30]] } : { type: it.type, stretch: STRETCHABLE.has(it.type) ? 1.4 : 1 };
+    card.appendChild(previewSvg(fakeArea, D, finalM));
+    card.appendChild(h('b', 'sp-name', it.name));
+    card.appendChild(h('span', 'sp-desc', it.desc));
+
+    card.onclick = () => {
+      close();
+      if (it.type === 'Draw') {
+        if (onDraw) onDraw();
+      } else if (it.type === 'Random') {
+        onSelect(randomArea());
+      } else {
+        onSelect({ type: it.type, rot: 0, stretch: STRETCHABLE.has(it.type) ? (it.type === 'Rectangle' ? 1.6 : 1.4) : 1 });
+      }
+    };
+    grid.appendChild(card);
+  });
+
+  const close = () => modal.remove();
+  x.onclick = close;
+  modal.onclick = (e) => { if (e.target === modal) close(); };
+  box.append(head, grid);
+  modal.appendChild(box);
+  document.body.appendChild(modal);
+  return { close };
+}
+
+/* Area Editor with Map and Controls */
 export function openAreaEditor(o) {
   const st = { center: o.center.slice(), area: o.area && o.area.type ? JSON.parse(JSON.stringify(o.area)) : { type: 'Circle' }, D: o.D, mode: 'shape', draw: [] };
   if (st.area.type === 'Custom') { st.mode = 'shape'; }
   const root = h('div', 'aedit'), mapEl = h('div', 'aemap'), top = h('div', 'aetop'), dock = h('div', 'aedock');
   const title = h('b', '', 'Play area'), close = h('button', 'aex', '\u00D7'); close.type = 'button'; close.setAttribute('aria-label', 'Close');
   top.append(title, close);
+
+  const spBtn = h('button', 'sp-btn'); spBtn.type = 'button';
   const hint = h('p', 'aehint', 'Tap the map to move the centre.');
   const chips = h('div', 'aechips');
   const ctl = h('div', 'aectl');
@@ -70,16 +117,20 @@ export function openAreaEditor(o) {
   const rot = mkRange('Rotation ', 0, 180, 5), str = mkRange('Stretch ', 1, 2.5, 0.05), siz = mkRange('Size (diameter) ', 50, 4000, 10);
   const btns = h('div', 'aebtns'), undo = h('button', 'o', 'Undo point'), clr = h('button', 'o', 'Clear'), save = h('button', '', 'Use this area');
   [undo, clr, save].forEach((b) => (b.type = 'button')); btns.append(undo, clr, save);
-  dock.append(hint, chips, ctl, btns); root.append(mapEl, top, dock); document.body.appendChild(root); document.body.classList.add('editing');
+
+  dock.append(spBtn, hint, chips, ctl, btns); root.append(mapEl, top, dock); document.body.appendChild(root); document.body.classList.add('editing');
 
   const map = L.map(mapEl, { zoomControl: false, attributionControl: true }).setView(st.center, 16);
   L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', { maxZoom: 20, maxNativeZoom: 19, attribution: 'Tiles &copy; Esri' }).addTo(map);
+  setTimeout(() => map.invalidateSize(), 150);
+
   let layers = [], dots = [];
   const centerMk = L.marker(st.center, { draggable: true, icon: L.divIcon({ className: 'ptw', html: '<i class="pt me" style="--c:#D4621A"></i>', iconSize: [28, 28], iconAnchor: [14, 14] }) }).addTo(map);
   centerMk.on('drag', (e) => { st.center = [e.latlng.lat, e.latlng.lng]; redraw(true); });
   map.on('click', (e) => { if (st.mode === 'draw') { st.draw.push([e.latlng.lat, e.latlng.lng]); redraw(); } else { st.center = [e.latlng.lat, e.latlng.lng]; centerMk.setLatLng(st.center); redraw(true); } });
 
   const drawPts = () => { const c = [st.draw.reduce((s, p) => s + p[0], 0) / st.draw.length, st.draw.reduce((s, p) => s + p[1], 0) / st.draw.length]; return { c, pts: st.draw.map((p) => offsetOf(c, p)) }; };
+
   function redraw(keepView) {
     layers.forEach((l) => l.remove()); layers = []; dots.forEach((d) => d.remove()); dots = [];
     const sty = { color: '#D4621A', weight: 3, fillColor: '#D4621A', fillOpacity: 0.14 }, fin = { color: '#2A1A0E', weight: 2, dashArray: '6 6', fillOpacity: 0 };
@@ -97,14 +148,23 @@ export function openAreaEditor(o) {
     }
     paint();
   }
+
   function paint() {
     const a = st.area, draw = st.mode === 'draw';
+    spBtn.innerHTML = '<span>Shape: <b>' + (draw ? 'Hand-drawn' : areaLabel(a)) + '</b></span><span>Open shape menu ▾</span>';
     [...chips.children].forEach((c) => c.classList.toggle('a', draw ? c.dataset.t === 'Draw' : c.dataset.t === (a.type === 'Custom' ? 'Draw' : a.type)));
     rot.w.hidden = draw || !BASE[a.type] || a.type === 'Oval'; str.w.hidden = draw || !STRETCHABLE.has(a.type) || a.type === 'Custom'; siz.w.hidden = draw;
     rot.r.value = a.rot || 0; rot.v.textContent = (a.rot || 0) + '\u00B0'; str.r.value = a.stretch || 1; str.v.textContent = '\u00D7' + (a.stretch || 1); siz.r.value = Math.min(4000, st.D); siz.v.textContent = Math.round(st.D) + ' m';
     undo.hidden = clr.hidden = !draw; hint.textContent = draw ? 'Tap the map to add corners (3 or more). Tap Undo to remove the last one.' : 'Tap the map or drag the orange point to move the centre.';
     save.disabled = draw && st.draw.length < 3;
   }
+
+  spBtn.onclick = () => openShapeModal({
+    current: st.area, D: st.D, finalM: o.finalM,
+    onSelect: (newArea) => { st.mode = 'shape'; st.area = newArea; redraw(); },
+    onDraw: () => { st.mode = 'draw'; st.draw = []; redraw(); }
+  });
+
   [...SHAPES, 'Draw', 'Random'].forEach((t) => {
     const b = h('button', 'chip', t === 'Random' ? '\uD83C\uDFB2 Random' : t); b.type = 'button'; b.dataset.t = t;
     b.onclick = () => {
@@ -115,6 +175,7 @@ export function openAreaEditor(o) {
     };
     chips.appendChild(b);
   });
+
   rot.r.oninput = () => { st.area.rot = +rot.r.value; redraw(true); }; str.r.oninput = () => { st.area.stretch = +str.r.value; redraw(true); }; siz.r.oninput = () => { st.D = +siz.r.value; redraw(true); };
   undo.onclick = () => { st.draw.pop(); redraw(); }; clr.onclick = () => { st.draw = []; redraw(); };
   const shut = () => { map.remove(); root.remove(); document.body.classList.remove('editing'); };
