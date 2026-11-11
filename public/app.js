@@ -1,6 +1,7 @@
 import { sb, confirmed } from './supa.js';
 import { createPoints } from './markers.js';
 import { rulesForm, normalize, DEFAULTS } from './rules.js';
+import { getPts, toLL, pip, offsetOf, randomArea, areaLabel, previewSvg, openAreaEditor } from './area.js';
 
 const $ = (i) => document.getElementById(i);
 const MET = { run: 9.8, walk: 3.8, ride: 7.5 };
@@ -10,7 +11,7 @@ let map, zone, me, pts, watchId = null, follow = true, firstFix = true, lastGpsE
 
 /* ---------- helpers ---------- */
 const toast = (m) => { const e = $('toast'); e.textContent = m; e.classList.add('on'); setTimeout(() => e.classList.remove('on'), 2600); };
-const show = (id) => document.querySelectorAll('.scr').forEach((s) => s.classList.toggle('on', s.id === id));
+const show = (id) => { document.querySelectorAll('.scr').forEach((s) => s.classList.toggle('on', s.id === id)); document.body.classList.toggle('ingame', id === 'game'); };
 const pos = () => new Promise((res, rej) => navigator.geolocation.getCurrentPosition((p) => res({ lat: p.coords.latitude, lng: p.coords.longitude }), rej, { timeout: 10000, maximumAge: 60000 }));
 const pad = (n) => String(n).padStart(2, '0');
 const mmss = (s) => { s = Math.max(0, Math.round(s)); return pad(Math.floor(s / 60)) + ':' + pad(s % 60); };
@@ -117,7 +118,7 @@ async function enter() {
 }
 async function loadGame() {
   const { data } = await sb.from('games').select('*').eq('id', gid).maybeSingle(); if (!data) return;
-  const prevRound = game ? game.round : null; game = data; if (prevRound !== null && game.round !== prevRound) restartLocal(); renderLobby();
+  const prevRound = game ? game.round : null; game = data; if (prevRound !== null && game.round !== prevRound) restartLocal(); if (map && zoneKey && zoneKey !== keyOf()) drawZone(false); renderLobby();
   if (game.status === 'live' && !started && !finished && myRole()) startGame();
   if (game.status === 'over' && loop) finish(game.winner);
 }
@@ -149,6 +150,46 @@ function renderLobby() {
   $('start').style.display = host ? 'block' : 'none'; $('lhint').style.display = host ? 'none' : 'block';
   $('rulesBox').classList.toggle('ro', !host); rf.setReadonly(!host);
   if (host ? !rulesInit : true) { rf.set(game.rules || DEFAULTS); rulesInit = true; }
+  renderArea(host);
+}
+function renderArea(host) {
+  const r = normalize(game.rules || {}), A = game.area || { type: 'Circle' };
+  $('areaPrev').replaceChildren(previewSvg(A, r.zoneM, r.shrink ? r.finalM : 0));
+  $('areaName').textContent = areaLabel(A) + ' \u00B7 ' + r.zoneM + ' m';
+  $('areaNote').textContent = A.type === 'Custom' ? 'Drawn by the host. It scales with the starting zone size.' : 'The host can let the map choose a spot and shape, or draw their own.';
+  const bt = $('areaBtns'); bt.replaceChildren(); if (!host || game.status !== 'lobby') return;
+  const a = el('button', 'o', 'Let the map choose'); a.onclick = autoArea;
+  const b = el('button', '', 'Draw my own'); b.onclick = editArea; bt.append(a, b);
+}
+// "Let the map choose": look for a park or open space nearby (OpenStreetMap data) and pick a random shape
+async function findSpot(c) {
+  const ctrl = new AbortController(), tm = setTimeout(() => ctrl.abort(), 7000);
+  const q = '[out:json][timeout:6];(way["leisure"~"^(park|playground|pitch|recreation_ground|garden)$"](around:1200,' + c[0] + ',' + c[1] + ');way["landuse"~"^(recreation_ground|grass|village_green)$"](around:1200,' + c[0] + ',' + c[1] + '););out center 20;';
+  try {
+    const res = await fetch('https://overpass-api.de/api/interpreter', { method: 'POST', body: 'data=' + encodeURIComponent(q), signal: ctrl.signal });
+    const j = await res.json(), els = (j.elements || []).filter((e) => e.center); if (!els.length) return null;
+    const e = els[Math.floor(Math.random() * els.length)]; return { lat: e.center.lat, lng: e.center.lon, name: e.tags && e.tags.name };
+  } finally { clearTimeout(tm); }
+}
+async function autoArea() {
+  loading('Finding a good spot...');
+  try {
+    const c = [game.center_lat, game.center_lng]; let spot = null;
+    try { spot = await findSpot(c); } catch (e) { console.warn('Spot search failed, using your position', e); }
+    const area = randomArea(), center = spot ? [spot.lat, spot.lng] : c;
+    const { error } = await sb.from('games').update({ center_lat: center[0], center_lng: center[1], area }).eq('id', gid);
+    if (error) throw error;
+    await loadGame(); toast(areaLabel(area) + (spot ? ' near ' + (spot.name || 'an open space') : ' around you'));
+  } catch (e) { fail(e); } finally { loading(''); }
+}
+function editArea() {
+  const r = normalize(game.rules || {});
+  openAreaEditor({ center: [game.center_lat, game.center_lng], area: game.area, D: r.zoneM, finalM: r.shrink ? r.finalM : 0, onSave: async (res) => {
+    const next = normalize({ ...rf.get(), zoneM: res.zoneM });
+    const { error } = await sb.from('games').update({ center_lat: res.center[0], center_lng: res.center[1], area: res.area, rules: next }).eq('id', gid);
+    if (error) return fail(error);
+    rf.set(next); await loadGame(); toast('Play area saved');
+  } });
 }
 $('start').onclick = async () => {
   if (!Object.values(players).some((p) => p.role === 'seeker')) return toast('Pick a seeker first');
@@ -172,6 +213,30 @@ const BASES = {
 const LEGACY = { Standard: 'Streets' };
 const who = (id) => { const p = players[id]; return { name: p ? p.name : 'Player', role: p ? p.role : 'seeker' }; };
 const gc = () => [game.center_lat, game.center_lng];
+// the play area: a circle or any shape (oval, square, triangle, hand-drawn ...). It shrinks toward the same shape at the final size.
+let areaPts = null, finals = [], zoneKey = '';
+const keyOf = () => JSON.stringify([game.rules, game.area, game.center_lat, game.center_lng]);
+function drawZone(fit) {
+  if (!map || !game) return;
+  finals.forEach((l) => l.remove()); finals = []; if (zone) { zone.remove(); zone = null; }
+  const r = rl(), c = gc(), fk = Math.min(r.finalM, r.zoneM) / r.zoneM;
+  areaPts = getPts(game.area, r.zoneM);
+  if (r.shrink) { // the final safe zone stays fixed on the map
+    const casing = { color: '#2A1A0E', weight: 5, opacity: 0.45, fillOpacity: 0, interactive: false }, dash = { color: '#F4AE52', weight: 3, dashArray: '8 8', fillOpacity: 0, interactive: false };
+    finals = areaPts ? [L.polygon(toLL(c, areaPts, fk), casing), L.polygon(toLL(c, areaPts, fk), dash)] : [L.circle(c, { radius: (r.zoneM * fk) / 2, ...casing }), L.circle(c, { radius: (r.zoneM * fk) / 2, ...dash })];
+    finals.forEach((l) => l.addTo(map));
+  }
+  const zs = { color: '#D4621A', weight: 4, fillOpacity: 0.04 };
+  zone = (areaPts ? L.polygon(toLL(c, areaPts, (radius() * 2) / r.zoneM), zs) : L.circle(c, { radius: radius(), ...zs })).addTo(map);
+  zoneKey = keyOf();
+  if (fit) map.fitBounds(zone.getBounds(), { padding: [70, 70], maxZoom: 18 });
+}
+function updateZone(rad) { if (!zone) return; if (areaPts) zone.setLatLngs(toLL(gc(), areaPts, (rad * 2) / rl().zoneM)); else zone.setRadius(rad); }
+function insideZone(rad) {
+  if (!me) return true;
+  if (!areaPts) return map.distance(gc(), me) <= rad;
+  const k = (rad * 2) / rl().zoneM; return pip(offsetOf(gc(), [me.lat, me.lng]), areaPts.map(([x, y]) => [x * k, y * k]));
+}
 function buildMap() {
   map = L.map('map', { zoomControl: false }).setView(gc(), 15);
   const names = Object.keys(BASES); let cur = 'Streets', tiles = [];
@@ -222,10 +287,7 @@ function buildMap() {
   lg.addTo(map);
   const fit = () => map.invalidateSize(); addEventListener('resize', fit); addEventListener('orientationchange', () => setTimeout(fit, 300)); setTimeout(fit, 200);
   const zc = L.control({ position: 'topleft' }); zc.onAdd = () => { const d = L.DomUtil.create('div', 'zpill'); d.id = 'zpill'; return d; }; zc.addTo(map);
-  if (rl().shrink) { const fr = Math.min(rl().finalM, rl().zoneM) / 2; // the final safe zone stays fixed on the map
-    L.circle(gc(), { radius: fr, color: '#2A1A0E', weight: 5, opacity: 0.45, fillOpacity: 0, interactive: false }).addTo(map);
-    L.circle(gc(), { radius: fr, color: '#F4AE52', weight: 3, dashArray: '8 8', fillOpacity: 0, interactive: false }).addTo(map); }
-  zone = L.circle(gc(), { radius: radius(), color: '#D4621A', weight: 4, fillOpacity: 0.04 }).addTo(map);
+  drawZone(true);
 }
 function radius() {
   const r = rl(); if (!r.shrink) return r.zoneM / 2;
@@ -251,7 +313,7 @@ async function loadPings() { // seekers only see hiders when the server releases
   if (!first || nowMs() - Date.parse(data.taken_at) < 20000) toast('PING! Hiders located');
 }
 function startGame() {
-  started = true; show('game'); finished = false;
+  started = true; show('game'); finished = false; setDock(false);
   const role = myRole();
   $('role').textContent = role.toUpperCase(); $('role').style.background = role === 'seeker' ? 'var(--or)' : 'var(--yl)';
   try { if (!window.L) throw new Error('Leaflet is missing'); buildMap(); } catch (e) { console.error('Map failed to start', e); map = null; zone = null; pts = null; toast('The map could not load. Check your connection and refresh.'); }
@@ -278,12 +340,12 @@ function startGame() {
 function setBanner(txt, yellow) { const b = $('banner'); b.textContent = txt || ''; b.classList.toggle('on', !!txt); b.classList.toggle('y', !!yellow); }
 function tick() {
   const r = rl(), t = elapsed(), hs = r.headMin * 60, end = r.roundMin * 60, role = myRole(), rad = radius();
-  if (zone) zone.setRadius(rad);
+  updateZone(rad);
   const w = hiders().length && freeHiders().length === 0 ? 'seekers' : t >= end ? 'hiders' : null;
   if (w) { if (game.host === uid && game.status !== 'over') sb.rpc('finish_game', { g: gid, w }).then(() => {}); return finish(w); }
   const kc = Math.round((MET[mode] * 70 * t) / 3600);
   $('tm').textContent = mmss(t); $('kc').textContent = kc; $('ds').textContent = Math.round(dist); $('clock').textContent = mmss(end - t);
-  const out = me && map && map.distance(gc(), me) > rad;
+  const out = me && map && !insideZone(rad);
   if (role === 'hider' && !amTagged() && t > hs && !isPaused()) { // zone penalty: warn, then count as tagged
     outT = out ? outT + 1 : Math.max(0, outT - 1);
     if (outT >= 120) { sb.rpc('tag_self', { g: gid }).then(() => loadPlayers()); toast('You stayed outside the zone: counted as tagged'); outT = 0; }
@@ -300,6 +362,7 @@ function tick() {
   const pz = isPaused(); $('tagBtn').disabled = t < hs || pz;
   $('pauseOv').hidden = !pz; $('pauseTxt').textContent = game.host === uid ? 'The clock, zone and pings are stopped. Press Resume when everyone is ready.' : 'The host stopped the game. The clock, zone and pings are on hold.';
   $('hostBar').hidden = game.host !== uid; $('pauseBtn').textContent = pz ? 'Resume game' : 'Pause game';
+  if (pz && game.host === uid && !pausedOpened) { pausedOpened = true; setDock(true); } if (!pz) pausedOpened = false;
   $('rulesBtn').disabled = !pz; $('rulesBtn').textContent = pz ? 'Edit rules' : 'Edit rules (pause first)';
   if (pts) pts.fade();
   const zp = $('zpill'); // PUBG-style zone timer
@@ -313,6 +376,19 @@ function tick() {
     else { cls += ' go'; html = '<small>ZONE CLOSING</small><b>' + mmss(seg - into) + '</b><i style="width:' + Math.round(((into - st) / sh) * 100) + '%"></i>'; }
     zp.className = cls; zp.innerHTML = html;
   }
+}
+
+/* ---------- slide-up panel ---------- */
+const dock = $('dock'); let dockOpen = false, pausedOpened = false;
+const peekPx = () => parseFloat(getComputedStyle($('game')).getPropertyValue('--peek')) || 116;
+function setDock(v) { dockOpen = v; dock.classList.toggle('open', v); dock.style.transform = ''; dock.style.transition = ''; $('grab').setAttribute('aria-expanded', String(v)); }
+{
+  const g = $('grab'); let y0 = null, base = 0, moved = 0;
+  g.addEventListener('pointerdown', (e) => { y0 = e.clientY; moved = 0; base = dockOpen ? 0 : dock.offsetHeight - peekPx(); g.setPointerCapture(e.pointerId); dock.style.transition = 'none'; });
+  g.addEventListener('pointermove', (e) => { if (y0 === null) return; moved = e.clientY - y0; dock.style.transform = 'translateY(' + Math.max(0, Math.min(dock.offsetHeight - peekPx(), base + moved)) + 'px)'; });
+  g.addEventListener('pointerup', () => { if (y0 === null) return; const m = moved; y0 = null; if (Math.abs(m) < 8) setDock(!dockOpen); else setDock(m < 0); });
+  g.addEventListener('pointercancel', () => { y0 = null; setDock(dockOpen); });
+  g.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setDock(!dockOpen); } });
 }
 
 /* ---------- stop / resume / edit rules / restart / end (host only) ---------- */
