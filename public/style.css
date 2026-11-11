@@ -60,8 +60,6 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
 #rulesBox.ro input[type=range],#rulesBox.ro input[type=checkbox]{pointer-events:none;opacity:.55}
 .hint{font:500 11px var(--fm);letter-spacing:.1em;text-transform:uppercase}
 /* game */
-#game .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}#game .top b{font:400 40px/1 var(--fh);color:var(--ort);font-variant-numeric:tabular-nums}
-#map{height:clamp(300px,52dvh,640px);border-radius:10px;border:1px solid var(--line);background:var(--inp)}
 #infoCard{margin:12px 0;font-weight:700;padding:14px 18px}
 #statsRow .st b{color:var(--ort)}
 #modes{display:flex;border:1px solid var(--line);border-radius:4px;overflow:hidden;margin:12px 0;background:var(--card)}
@@ -85,14 +83,6 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
 .zpill.warn{background:var(--yl);animation:zw 1s ease-in-out infinite}.zpill.warn small,.zpill.warn b{color:#FEF3E2}.zpill.go{box-shadow:0 4px 18px rgba(0,0,0,.25),inset 0 0 0 2px var(--yl)}@keyframes zw{50%{transform:scale(1.06)}}
 /* responsive */
 @media (max-width:900px){.hg,.lg2{grid-template-columns:1fr}h1{font-size:clamp(46px,13vw,72px)}}
-@media (min-width:1000px) and (min-height:560px){
-  #game.on{display:grid;grid-template-columns:minmax(0,1fr) 360px;grid-template-rows:auto auto auto auto auto auto auto 1fr;column-gap:24px;grid-template-areas:"map top" "map banner" "map info" "map stats" "map modes" "map tag" "map host" "map ."}
-  #game .top{grid-area:top}#game #banner{grid-area:banner}#game #mapWrap{grid-area:map}#game #map{height:calc(100dvh - 120px)}#game #infoCard{grid-area:info;margin-top:0}#game #statsRow{grid-area:stats}#game #modes{grid-area:modes}#game #tagBtn{grid-area:tag}
-}
-@media (max-height:520px) and (orientation:landscape){
-  #game.on{display:grid;grid-template-columns:minmax(0,1fr) 300px;column-gap:14px;grid-template-areas:"map top" "map banner" "map info" "map stats" "map modes" "map tag" "map host"}
-  #game .top{grid-area:top;margin-bottom:6px}#game .top b{font-size:30px}#game #banner{grid-area:banner}#game #mapWrap{grid-area:map}#game #map{height:calc(100dvh - 90px);min-height:0}#game #infoCard{grid-area:info;margin:6px 0}#game #statsRow{grid-area:stats}#game #modes{grid-area:modes}#game #tagBtn{grid-area:tag}
-}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}}
 
 /* ---------- player points on the map ---------- */
@@ -149,3 +139,35 @@ input[type=number]:focus{border-color:var(--B);box-shadow:0 0 0 4px color-mix(in
 .mi:hover,.mi.on{background:color-mix(in srgb,var(--B) 14%,transparent)}.mi:hover{transform:none!important;box-shadow:none!important}
 .mi i{flex:none;width:26px;height:26px;border-radius:6px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.22)}.mi .ck{margin-left:auto;color:var(--ort);font-weight:800}
 .mapmenu.leaflet-control{z-index:1100}
+
+/* ---------- full-screen game: the map fills the screen, info floats on top ---------- */
+body.ingame{overflow:hidden}
+.ingame .hdr,.ingame #gmap,.ingame #gscrim{display:none}
+#game{--peek:82px}
+#game.on{display:block;position:fixed;inset:0;z-index:20;max-width:none;margin:0;padding:0;background:var(--bg)}
+#mapWrap{position:absolute;inset:0;z-index:1;isolation:isolate}#game #map{height:100%;width:100%;border:0;border-radius:0}
+.gtop{position:absolute;top:calc(12px + env(safe-area-inset-top));left:12px;z-index:30;display:flex;align-items:center;gap:10px;padding:8px 14px 8px 8px;border-radius:10px;background:color-mix(in srgb,var(--bg) 88%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:0 4px 18px rgba(0,0,0,.25),inset 0 0 0 1px var(--line)}
+.gtop b{font:400 28px/1 var(--fh);color:var(--ort);font-variant-numeric:tabular-nums}
+#game .banner{position:absolute;left:50%;top:calc(78px + env(safe-area-inset-top));transform:translateX(-50%);z-index:30;width:max-content;max-width:calc(100% - 24px);margin:0;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.fab{position:absolute;right:14px;bottom:calc(var(--peek) + 16px + env(safe-area-inset-bottom));z-index:35;width:auto;height:52px;padding:0 26px;border-radius:26px;margin:0;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+.dock{position:absolute;left:0;right:0;bottom:0;margin:0 auto;width:min(580px,100%);z-index:40;background:var(--card);border:1px solid var(--line);border-bottom:0;border-radius:18px 18px 0 0;box-shadow:0 -14px 50px rgba(0,0,0,.35);padding:0 16px calc(16px + env(safe-area-inset-bottom));transform:translateY(calc(100% - var(--peek) - env(safe-area-inset-bottom)));transition:transform .45s cubic-bezier(.16,1,.3,1);max-height:82dvh;overflow-y:auto;overscroll-behavior:contain}
+.dock.open{transform:none}
+.grab{display:block;width:100%;height:30px;margin:0;border:0;background:none;box-shadow:none;cursor:grab;touch-action:none}.grab:hover{transform:none!important;box-shadow:none!important}.grab i{display:block;width:44px;height:5px;border-radius:3px;background:var(--line);margin:12px auto 0}
+.peek{min-height:50px;display:flex;align-items:center;padding:2px 2px 12px;font-weight:700;font-size:15px;line-height:1.35}
+.more{padding-top:4px}.dock .row{margin-bottom:12px}
+#game .leaflet-bottom{bottom:var(--peek)}
+@media (max-width:640px){#game .leaflet-top.leaflet-left{left:12px;transform:none;top:62px}#game .banner{top:calc(134px + env(safe-area-inset-top))}}
+/* ---------- play-area card and editor ---------- */
+.asum{display:flex;gap:16px;align-items:center;margin-bottom:14px}.aprev{display:block;width:88px;height:88px;flex:none}
+.asum b{display:block;font:400 26px/1 var(--fh);text-transform:uppercase}.asum p{margin:6px 0 0;color:var(--mu);font-size:13px;line-height:1.4}
+.abtns{display:flex;gap:10px}.abtns button{flex:1;margin:0;height:46px;font-size:13.5px}
+body.editing{overflow:hidden}
+.aedit{position:fixed;inset:0;z-index:9200;background:var(--bg)}.aemap{position:absolute;inset:0}
+.aetop{position:absolute;top:calc(12px + env(safe-area-inset-top));left:12px;right:12px;display:flex;justify-content:space-between;align-items:center;z-index:5;pointer-events:none}
+.aetop b{pointer-events:auto;background:color-mix(in srgb,var(--bg) 88%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);padding:10px 16px;border-radius:8px;font:400 22px/1 var(--fh);text-transform:uppercase;box-shadow:inset 0 0 0 1px var(--line)}
+.aex{pointer-events:auto;width:44px!important;height:44px!important;margin:0!important;border-radius:8px!important;background:var(--card)!important;color:var(--tx)!important;font:400 26px/1 var(--fb)!important;box-shadow:inset 0 0 0 1px var(--line)!important}
+.aedock{position:absolute;left:0;right:0;bottom:0;margin:0 auto;width:min(640px,100%);z-index:6;background:var(--card);border:1px solid var(--line);border-bottom:0;border-radius:18px 18px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom));box-shadow:0 -14px 50px rgba(0,0,0,.35);max-height:62dvh;overflow:auto}
+.aehint{font:500 10.5px var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--mu);margin:0 0 12px;line-height:1.5}
+.aechips{display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;margin-bottom:8px}.aechips .chip{flex:none;white-space:nowrap;margin:0;border:1px solid var(--line);padding:0 16px;width:auto!important;height:40px!important;display:inline-flex!important;align-items:center;justify-content:center;box-shadow:none}.aechips .chip:hover{transform:none!important;box-shadow:none!important}
+.aer{display:block;margin:8px 0}.aer[hidden]{display:none}.aer span{display:flex;justify-content:space-between;font:500 10.5px var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--mu)}.aer b{color:var(--ort)}
+.aebtns{display:flex;gap:10px;margin-top:14px}.aebtns button{margin:0;flex:1;height:48px}.aebtns button[hidden]{display:none}
