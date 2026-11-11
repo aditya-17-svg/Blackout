@@ -1,4 +1,4 @@
-// Play-area shapes (circle, oval, square, triangle ...), the draw-your-own editor, and helpers.
+// Play-area shapes, dynamic hazard zones, and editor.
 const TAU = Math.PI * 2, MLAT = 110540;
 export const SHAPES = ['Circle', 'Oval', 'Square', 'Rectangle', 'Triangle', 'Diamond', 'Pentagon', 'Hexagon', 'Octagon'];
 export const STRETCHABLE = new Set(['Oval', 'Rectangle', 'Diamond']);
@@ -22,6 +22,7 @@ export function getPts(a, D) {
   const k = Math.sqrt(Math.PI / polyArea(u)) * (D / 2);
   return u.map(([x, y]) => [x * k, y * k]);
 }
+
 export function pip(pt, poly) {
   let c = false;
   for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
@@ -30,6 +31,7 @@ export function pip(pt, poly) {
   }
   return c;
 }
+
 export const mlng = (lat) => 111320 * Math.cos((lat * Math.PI) / 180);
 export const toLL = (center, pts, k = 1) => pts.map(([x, y]) => [center[0] + (y * k) / MLAT, center[1] + (x * k) / mlng(center[0])]);
 export const offsetOf = (center, ll) => [(ll[1] - center[1]) * mlng(center[0]), (ll[0] - center[0]) * MLAT];
@@ -38,6 +40,22 @@ export function randomArea() {
   return { type: t, rot: Math.round(Math.random() * 180), stretch: STRETCHABLE.has(t) ? +(1.3 + Math.random() * 0.9).toFixed(2) : 1 };
 }
 export const areaLabel = (a) => (a && a.type ? (a.type === 'Custom' ? 'Hand-drawn' : a.type) : 'Circle');
+
+// Generate dynamic Red Hazard Zones inside play area (for zones > 30m)
+export function createRedZones(center, currentRadius, count = 2) {
+  if (currentRadius <= 30) return [];
+  const zones = [];
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const dist = (0.25 + Math.random() * 0.5) * currentRadius;
+    const rRad = Math.max(12, Math.min(60, currentRadius * 0.22));
+    const offset = [Math.cos(angle) * dist, Math.sin(angle) * dist];
+    const lat = center[0] + offset[1] / MLAT;
+    const lng = center[1] + offset[0] / mlng(center[0]);
+    zones.push({ lat, lng, radius: rRad });
+  }
+  return zones;
+}
 
 export function previewSvg(a, D = 1000, finalM = 0) {
   const NS = 'http://www.w3.org/2000/svg', svg = document.createElementNS(NS, 'svg');
@@ -53,7 +71,7 @@ export function previewSvg(a, D = 1000, finalM = 0) {
 
 const h = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 
-/* Shape Pop-Up Modal (Displays all shapes clearly) */
+/* Shape Pop-Up Modal (Shows all shapes clearly) */
 export function openShapeModal({ current, D = 1000, finalM = 0, onSelect, onDraw }) {
   const modal = h('div', 'sp-modal');
   const box = h('div', 'sp-box');
@@ -101,7 +119,7 @@ export function openShapeModal({ current, D = 1000, finalM = 0, onSelect, onDraw
   return { close };
 }
 
-/* Area Editor with Map and Controls */
+/* Area Editor with Map & Controls */
 export function openAreaEditor(o) {
   const st = { center: o.center.slice(), area: o.area && o.area.type ? JSON.parse(JSON.stringify(o.area)) : { type: 'Circle' }, D: o.D, mode: 'shape', draw: [] };
   if (st.area.type === 'Custom') { st.mode = 'shape'; }
