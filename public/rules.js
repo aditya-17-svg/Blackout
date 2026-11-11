@@ -5,7 +5,7 @@ export const LIM = {
   roundMin: { min: 5, max: 180, step: 5, hardMin: 5, hardMax: 480 },
   pingSec: { min: 15, max: 900, step: 5, hardMin: 15, hardMax: 3600 },
   headMin: { min: 0, max: 30, step: 1, hardMin: 0, hardMax: 60 },
-  zoneM: { min: 100, max: 4000, step: 10, hardMin: 50, hardMax: 10000 },
+  zoneM: { min: 50, max: 4000, step: 10, hardMin: 50, hardMax: 10000 },
   finalM: { min: 15, max: 2000, step: 5, hardMin: 15, hardMax: 10000 },
 };
 export const DEFAULTS = { roundMin: 45, pingSec: 300, headMin: 3, zoneM: 1000, finalM: 100, shrink: true };
