@@ -28,6 +28,7 @@ create table if not exists public.games (
   winner text check (winner in ('hiders','seekers')),
   paused_at timestamptz,
   round int not null default 1,
+  area jsonb check (area is null or (jsonb_typeof(area) = 'object' and pg_column_size(area) < 6000)),
   created_at timestamptz not null default now()
 );
 
@@ -123,7 +124,7 @@ revoke all on all tables in schema public from anon, authenticated;
 grant select on public.profiles, public.games, public.game_players, public.pings, public.tags, public.match_results to authenticated;
 grant update (display_name) on public.profiles to authenticated;
 grant insert on public.games, public.game_players to authenticated;
-grant update (rules) on public.games to authenticated;
+grant update (rules, area, center_lat, center_lng) on public.games to authenticated;
 grant select, insert, update on public.locations, public.live_positions to authenticated;
 
 drop policy if exists "profiles readable" on public.profiles;
