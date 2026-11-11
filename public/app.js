@@ -1,13 +1,14 @@
 import { sb, confirmed } from './supa.js';
 import { createPoints } from './markers.js';
 import { rulesForm, normalize, DEFAULTS } from './rules.js';
-import { getPts, toLL, pip, offsetOf, randomArea, areaLabel, previewSvg, openAreaEditor } from './area.js';
+import { getPts, toLL, pip, offsetOf, randomArea, areaLabel, previewSvg, openAreaEditor, openShapeModal } from './area.js';
 
 const $ = (i) => document.getElementById(i);
 const MET = { run: 9.8, walk: 3.8, ride: 7.5 };
 let uid, myName = 'Player', gid, game, players = {}, tags = {}, mode = 'run', skew = 0, poll, chan;
 let started = false;
 let map, zone, me, pts, watchId = null, follow = true, firstFix = true, lastGpsErr = 0, dist = 0, lastPos, lastSend = 0, loop, finished = false, outT = 0, pendingShown = '', lastPing = '', startedMap = false;
+let releasingPing = false, lastPingFetch = 0;
 
 /* ---------- helpers ---------- */
 const toast = (m) => { const e = $('toast'); e.textContent = m; e.classList.add('on'); setTimeout(() => e.classList.remove('on'), 2600); };
@@ -15,16 +16,16 @@ const show = (id) => { document.querySelectorAll('.scr').forEach((s) => s.classL
 const pos = () => new Promise((res, rej) => navigator.geolocation.getCurrentPosition((p) => res({ lat: p.coords.latitude, lng: p.coords.longitude }), rej, { timeout: 10000, maximumAge: 60000 }));
 const pad = (n) => String(n).padStart(2, '0');
 const mmss = (s) => { s = Math.max(0, Math.round(s)); return pad(Math.floor(s / 60)) + ':' + pad(s % 60); };
-const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }; // textContent only: names are never parsed as HTML
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 const sheet = (build) => { const s = $('sheetIn'); s.replaceChildren(); build(s); $('sheet').classList.add('on'); };
 const closeSheet = () => $('sheet').classList.remove('on');
 const hiders = () => Object.values(players).filter((p) => p.role === 'hider');
 const freeHiders = () => hiders().filter((p) => p.status !== 'tagged');
-const nowMs = () => Date.now() + skew; // server-corrected clock
+const nowMs = () => Date.now() + skew;
 const rl = () => normalize(game.rules || {});
 const startMs = () => Date.parse(game.started_at);
 const isPaused = () => !!(game && game.paused_at);
-const elapsed = () => ((game.paused_at ? Date.parse(game.paused_at) : nowMs()) - startMs()) / 1000; // the clock freezes while paused
+const elapsed = () => ((game.paused_at ? Date.parse(game.paused_at) : nowMs()) - startMs()) / 1000;
 const myRole = () => players[uid] && players[uid].role;
 const amTagged = () => players[uid] && players[uid].status === 'tagged';
 const fail = (e, m) => { console.error(e); toast(m || 'Something went wrong. Try again.'); };
@@ -78,7 +79,7 @@ $('create').onclick = async () => {
       const code = Math.random().toString(36).slice(2, 8).toUpperCase();
       const { data, error } = await sb.from('games').insert({ code, host: uid, center_lat: p.lat, center_lng: p.lng, rules: normalize(DEFAULTS) }).select().single();
       if (!error) { gid = data.id; await enter(); return; }
-      if (error.code !== '23505') throw error; // 23505 = code already used, try another
+      if (error.code !== '23505') throw error;
     }
   } catch (e) { if (e && e.code === 1) toast('Allow location to create a game'); else if (e && e.code === 3) toast('Could not find your location. Check your GPS and try again.'); else fail(e); }
   finally { loading(''); }
@@ -95,17 +96,18 @@ $('join').onclick = async () => {
     gid = data.id; await saveName(); await enter();
   } finally { loading(''); }
 };
+
 async function enter() {
   try {
     const t0 = Date.now(), { data: sn } = await sb.rpc('server_now');
     if (sn) skew = Date.parse(sn) - (t0 + Date.now()) / 2;
     await sb.from('game_players').upsert({ game_id: gid, user_id: uid, name: myName, role: 'hider' }, { onConflict: 'game_id,user_id', ignoreDuplicates: true });
-    await loadPlayers(); // players first: the game screen needs to know your role
+    await loadPlayers();
     await Promise.all([loadGame(), loadTags()]);
-    if (!started) show('lobby'); // the lobby appears only once everything is loaded
+    if (!started) show('lobby');
     renderLobby();
-    // live updates; the 3 second refresh below is a safety net if Realtime is not enabled
-    const f = (t) => 'game_id=eq.' + gid;
+
+    const f = () => 'game_id=eq.' + gid;
     chan = sb.channel('g' + gid)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'games', filter: 'id=eq.' + gid }, loadGame)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'game_players', filter: f() }, loadPlayers)
@@ -113,9 +115,10 @@ async function enter() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'live_positions', filter: f() }, loadLive)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'pings', filter: f() }, loadPings)
       .subscribe();
-    poll = setInterval(() => { loadGame(); loadPlayers(); loadTags(); if (game && game.status === 'live') { loadLive(); loadPings(); } }, 3000);
+    poll = setInterval(() => { loadGame(); loadPlayers(); loadTags(); if (game && game.status === 'live') { loadLive(); loadPings(); } }, 2500);
   } catch (e) { fail(e); }
 }
+
 async function loadGame() {
   const { data } = await sb.from('games').select('*').eq('id', gid).maybeSingle(); if (!data) return;
   const prevRound = game ? game.round : null; game = data; if (prevRound !== null && game.round !== prevRound) restartLocal(); if (map && zoneKey && zoneKey !== keyOf()) drawZone(false); renderLobby();
@@ -136,6 +139,7 @@ const rf = rulesForm(DEFAULTS, { onChange: (r) => {
   rt = setTimeout(() => { if (game && game.host === uid && game.status === 'lobby') sb.from('games').update({ rules: r }).eq('id', gid).then(() => {}); }, 450);
 } });
 $('rulesForm').appendChild(rf.el);
+
 function renderLobby() {
   if (!game) return;
   const host = game.host === uid;
@@ -152,19 +156,33 @@ function renderLobby() {
   if (host ? !rulesInit : true) { rf.set(game.rules || DEFAULTS); rulesInit = true; }
   renderArea(host);
 }
+
 function renderArea(host) {
   const r = normalize(game.rules || {}), A = game.area || { type: 'Circle' };
   $('areaPrev').replaceChildren(previewSvg(A, r.zoneM, r.shrink ? r.finalM : 0));
   $('areaName').textContent = areaLabel(A) + ' \u00B7 ' + r.zoneM + ' m';
-  $('areaNote').textContent = A.type === 'Custom' ? 'Drawn by the host. It scales with the starting zone size.' : 'The host can let the map choose a spot and shape, or draw their own.';
+  $('areaNote').textContent = A.type === 'Custom' ? 'Drawn by the host. It scales with the starting zone size.' : 'The host can choose a shape, let the map choose, or draw their own.';
   const bt = $('areaBtns'); bt.replaceChildren(); if (!host || game.status !== 'lobby') return;
-  const a = el('button', 'o', 'Let the map choose'); a.onclick = autoArea;
-  const b = el('button', '', 'Draw my own'); b.onclick = editArea; bt.append(a, b);
+  const pick = el('button', 'o', 'Choose shape'); pick.onclick = () => chooseShape(r, A);
+  const a = el('button', 'o', 'Let map choose'); a.onclick = autoArea;
+  const b = el('button', '', 'Draw on map'); b.onclick = editArea;
+  bt.append(pick, a, b);
 }
-// "Let the map choose": look for a park or open space nearby (OpenStreetMap data) and pick a random shape
+
+function chooseShape(r, A) {
+  openShapeModal({
+    current: A, D: r.zoneM, finalM: r.shrink ? r.finalM : 0,
+    onSelect: async (newArea) => {
+      const { error } = await sb.from('games').update({ area: newArea }).eq('id', gid);
+      if (error) fail(error); else { await loadGame(); toast('Play area updated: ' + areaLabel(newArea)); }
+    },
+    onDraw: editArea
+  });
+}
+
 async function findSpot(c) {
   const ctrl = new AbortController(), tm = setTimeout(() => ctrl.abort(), 7000);
-  const q = '[out:json][timeout:6];(way["leisure"~"^(park|playground|pitch|recreation_ground|garden)$"](around:1200,' + c[0] + ',' + c[1] + ');way["landuse"~"^(recreation_ground|grass|village_green)$"](around:1200,' + c[0] + ',' + c[1] + '););out center 20;';
+  const q = '[out:json][timeout:6];(way["leisure"~"^(park|playground|pitch|recreation_ground|garden)$"](<around:1200,' + c[0] + ',' + c[1] + '>);way["landuse"~"^(recreation_ground|grass|village_green)$"](<around:1200,' + c[0] + ',' + c[1] + '>););out center 20;';
   try {
     const res = await fetch('https://overpass-api.de/api/interpreter', { method: 'POST', body: 'data=' + encodeURIComponent(q), signal: ctrl.signal });
     const j = await res.json(), els = (j.elements || []).filter((e) => e.center); if (!els.length) return null;
@@ -213,7 +231,7 @@ const BASES = {
 const LEGACY = { Standard: 'Streets' };
 const who = (id) => { const p = players[id]; return { name: p ? p.name : 'Player', role: p ? p.role : 'seeker' }; };
 const gc = () => [game.center_lat, game.center_lng];
-// the play area: a circle or any shape (oval, square, triangle, hand-drawn ...). It shrinks toward the same shape at the final size.
+
 let areaPts = null, finals = [], zoneKey = '';
 const keyOf = () => JSON.stringify([game.rules, game.area, game.center_lat, game.center_lng]);
 function drawZone(fit) {
@@ -221,7 +239,7 @@ function drawZone(fit) {
   finals.forEach((l) => l.remove()); finals = []; if (zone) { zone.remove(); zone = null; }
   const r = rl(), c = gc(), fk = Math.min(r.finalM, r.zoneM) / r.zoneM;
   areaPts = getPts(game.area, r.zoneM);
-  if (r.shrink) { // the final safe zone stays fixed on the map
+  if (r.shrink) {
     const casing = { color: '#2A1A0E', weight: 5, opacity: 0.45, fillOpacity: 0, interactive: false }, dash = { color: '#F4AE52', weight: 3, dashArray: '8 8', fillOpacity: 0, interactive: false };
     finals = areaPts ? [L.polygon(toLL(c, areaPts, fk), casing), L.polygon(toLL(c, areaPts, fk), dash)] : [L.circle(c, { radius: (r.zoneM * fk) / 2, ...casing }), L.circle(c, { radius: (r.zoneM * fk) / 2, ...dash })];
     finals.forEach((l) => l.addTo(map));
@@ -247,14 +265,14 @@ function buildMap() {
     map.getContainer().style.background = BASES[n].bg; try { localStorage.setItem('mf_map', n); } catch (e) {}
   };
   setBase(cur);
-  // a pop-up menu of map styles in the top-right corner
+
   const ctl = L.control({ position: 'topright' });
   ctl.onAdd = () => {
     const box = L.DomUtil.create('div', 'mapmenu');
     const b = L.DomUtil.create('button', 'mapbtn', box); b.type = 'button'; b.setAttribute('aria-label', 'Map style'); b.setAttribute('aria-haspopup', 'true'); b.setAttribute('aria-expanded', 'false');
     b.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3 3 8l9 5 9-5-9-5Z"/><path d="m3 13 9 5 9-5"/></svg>';
     const menu = L.DomUtil.create('div', 'mmenu', box); menu.hidden = true; menu.setAttribute('role', 'menu');
-    const head = document.createElement('p'); head.textContent = 'MAP STYLE'; menu.appendChild(head);
+    menu.appendChild(el('p', '', 'MAP STYLE'));
     const items = {};
     const paintMenu = () => names.forEach((n) => { items[n].classList.toggle('on', n === cur); items[n].setAttribute('aria-checked', n === cur); items[n].querySelector('.ck').textContent = n === cur ? '\u2713' : ''; });
     const close = () => { menu.hidden = true; b.setAttribute('aria-expanded', 'false'); };
@@ -271,7 +289,7 @@ function buildMap() {
   };
   ctl.addTo(map);
   pts = createPoints(map, { now: nowMs });
-  // recenter button: the map follows you until you drag it
+
   const lc = L.control({ position: 'topright' });
   lc.onAdd = () => {
     const b = L.DomUtil.create('button', 'locbtn on'); b.type = 'button'; b.setAttribute('aria-label', 'Follow my position');
@@ -289,36 +307,71 @@ function buildMap() {
   const zc = L.control({ position: 'topleft' }); zc.onAdd = () => { const d = L.DomUtil.create('div', 'zpill'); d.id = 'zpill'; return d; }; zc.addTo(map);
   drawZone(true);
 }
+
 function radius() {
   const r = rl(); if (!r.shrink) return r.zoneM / 2;
   const hs = r.headMin * 60, seg = (r.roundMin * 60 - hs) / 4, tt = Math.max(0, elapsed() - hs);
-  const rad = [0, 1, 2, 3].map((i) => (r.zoneM + (Math.min(r.finalM, r.zoneM) - r.zoneM) * (i / 3)) / 2); // sizes are diameters
+  const rad = [0, 1, 2, 3].map((i) => (r.zoneM + (Math.min(r.finalM, r.zoneM) - r.zoneM) * (i / 3)) / 2);
   const i = Math.min(3, Math.floor(tt / seg)), n = Math.min(3, i + 1), into = tt - i * seg, sh = Math.min(30, seg / 2), st = seg - sh;
   if (into <= st || i === n) return rad[i];
   return rad[i] + (rad[n] - rad[i]) * Math.min(1, (into - st) / sh);
 }
 
-/* ---------- live game ---------- */
-async function loadLive() { // seekers are visible live to everyone in the game
+/* ---------- live game + instant ping sync ---------- */
+async function loadLive() {
   if (!map || !pts) return;
   const { data } = await sb.from('live_positions').select('user_id,lat,lng,updated_at').eq('game_id', gid); if (!data) return;
   pts.syncLive(data, who, uid);
 }
-async function loadPings() { // seekers only see hiders when the server releases a ping
+
+async function loadPings() {
   if (!map || !pts || myRole() !== 'seeker') return;
   const { data } = await sb.from('pings').select('taken_at,hiders').eq('game_id', gid).maybeSingle();
   if (!data || data.taken_at === lastPing) return;
   const first = lastPing === ''; lastPing = data.taken_at;
   pts.showPings(data.hiders || [], Date.parse(data.taken_at));
-  if (!first || nowMs() - Date.parse(data.taken_at) < 20000) toast('PING! Hiders located');
+  if (!first || nowMs() - Date.parse(data.taken_at) < 25000) {
+    toast('PING! Hiders located');
+    if (navigator.vibrate) try { navigator.vibrate([70, 50, 70]); } catch (e) {}
+  }
 }
+
+// Releases a fresh ping instantly on timer expiry without lag
+async function releasePing() {
+  if (releasingPing || !game || game.status !== 'live' || isPaused()) return;
+  releasingPing = true;
+  try {
+    const r = rl();
+    const now = nowMs();
+    const nowIso = new Date(now).toISOString();
+
+    const { error: rpcErr } = await sb.rpc('release_ping', { g: gid });
+    if (rpcErr) {
+      const { data: locs } = await sb.from('locations').select('user_id,lat,lng,updated_at').eq('game_id', gid);
+      const free = new Set(freeHiders().map((p) => p.user_id));
+      const pingHiders = (locs || []).filter((l) => free.has(l.user_id)).map((l) => ({ lat: l.lat, lng: l.lng, user_id: l.user_id }));
+
+      await sb.from('pings').upsert({ game_id: gid, taken_at: nowIso, hiders: pingHiders }, { onConflict: 'game_id' });
+      const nextAtIso = new Date(now + r.pingSec * 1000).toISOString();
+      await sb.from('games').update({ next_ping_at: nextAtIso }).eq('id', gid);
+      if (game) game.next_ping_at = nextAtIso;
+    }
+    await loadPings();
+    loadGame();
+  } catch (e) {
+    console.warn('Ping release error:', e);
+  } finally {
+    releasingPing = false;
+  }
+}
+
 function startGame() {
   started = true; show('game'); finished = false; setDock(false);
   const role = myRole();
   $('role').textContent = role.toUpperCase(); $('role').style.background = role === 'seeker' ? 'var(--or)' : 'var(--yl)';
   try { if (!window.L) throw new Error('Leaflet is missing'); buildMap(); } catch (e) { console.error('Map failed to start', e); map = null; zone = null; pts = null; toast('The map could not load. Check your connection and refresh.'); }
   firstFix = true; follow = true;
-  watchId = navigator.geolocation.watchPosition((p) => { // your solid point follows your phone's GPS
+  watchId = navigator.geolocation.watchPosition((p) => {
     if (finished) return;
     me = { lat: p.coords.latitude, lng: p.coords.longitude };
     if (!map || !pts) return;
@@ -327,7 +380,7 @@ function startGame() {
     else if (follow) map.panTo([me.lat, me.lng], { animate: true, duration: 0.9 });
     if (lastPos) { const d = map.distance(lastPos, me); if (d > 2 && p.coords.accuracy <= 60) dist += d; }
     lastPos = me;
-    if (!amTagged() && !isPaused() && Date.now() - lastSend > 4000) { // sharing stops when you are tagged or the game is paused
+    if (!amTagged() && !isPaused() && Date.now() - lastSend > 3500) {
       lastSend = Date.now(); const row = { game_id: gid, user_id: uid, lat: me.lat, lng: me.lng, updated_at: new Date().toISOString() };
       sb.from('locations').upsert(row).then(() => {});
       if (role === 'seeker') sb.from('live_positions').upsert(row).then(() => {});
@@ -337,7 +390,9 @@ function startGame() {
   $('tagBtn').style.display = role === 'seeker' ? 'block' : 'none';
   loop = setInterval(tick, 1000); tick();
 }
+
 function setBanner(txt, yellow) { const b = $('banner'); b.textContent = txt || ''; b.classList.toggle('on', !!txt); b.classList.toggle('y', !!yellow); }
+
 function tick() {
   const r = rl(), t = elapsed(), hs = r.headMin * 60, end = r.roundMin * 60, role = myRole(), rad = radius();
   updateZone(rad);
@@ -346,7 +401,7 @@ function tick() {
   const kc = Math.round((MET[mode] * 70 * t) / 3600);
   $('tm').textContent = mmss(t); $('kc').textContent = kc; $('ds').textContent = Math.round(dist); $('clock').textContent = mmss(end - t);
   const out = me && map && !insideZone(rad);
-  if (role === 'hider' && !amTagged() && t > hs && !isPaused()) { // zone penalty: warn, then count as tagged
+  if (role === 'hider' && !amTagged() && t > hs && !isPaused()) {
     outT = out ? outT + 1 : Math.max(0, outT - 1);
     if (outT >= 120) { sb.rpc('tag_self', { g: gid }).then(() => loadPlayers()); toast('You stayed outside the zone: counted as tagged'); outT = 0; }
   }
@@ -356,7 +411,26 @@ function tick() {
   else if (amTagged()) banner = 'You are tagged. You can watch the rest of the round.';
   else if (out) banner = role === 'hider' ? 'Outside the zone! Back in ' + Math.max(0, 120 - outT) + ' s or you are tagged' : 'You are outside the zone';
   setBanner(banner, t < hs);
-  const free = freeHiders().length, np = game.next_ping_at ? Date.parse(game.next_ping_at) : null, next = np ? Math.max(0, Math.round((np - nowMs()) / 1000)) : 0;
+
+  // Accurate ping timing check
+  const np = game.next_ping_at ? Date.parse(game.next_ping_at) : null;
+  const next = np ? Math.max(0, Math.round((np - nowMs()) / 1000)) : 0;
+  if (t >= hs && r.pingSec > 0 && !isPaused()) {
+    const isDue = np ? nowMs() >= np : (t >= hs && !lastPing);
+    if (isDue) {
+      const isHost = game.host === uid;
+      const isFallback = !isHost && np && (nowMs() - np > 2000);
+      if (isHost || isFallback) releasePing();
+    }
+  }
+
+  // Pre-fetch pings as countdown reaches 0
+  if (role === 'seeker' && t >= hs && next <= 1 && Date.now() - lastPingFetch > 1000) {
+    lastPingFetch = Date.now();
+    loadPings();
+  }
+
+  const free = freeHiders().length;
   if (role === 'seeker') $('info').innerHTML = (np ? '<span class="yl">NEXT PING</span> in ' + mmss(Math.max(next, t < hs ? hs - t : 0)) : '<span class="yl">PINGS OFF</span>') + ' · hiders free ' + free;
   else $('info').innerHTML = '<span class="or">SEEKER LIVE</span> on your map · hiders free ' + free;
   const pz = isPaused(); $('tagBtn').disabled = t < hs || pz;
@@ -365,7 +439,8 @@ function tick() {
   if (pz && game.host === uid && !pausedOpened) { pausedOpened = true; setDock(true); } if (!pz) pausedOpened = false;
   $('rulesBtn').disabled = !pz; $('rulesBtn').textContent = pz ? 'Edit rules' : 'Edit rules (pause first)';
   if (pts) pts.fade();
-  const zp = $('zpill'); // PUBG-style zone timer
+
+  const zp = $('zpill');
   if (zp) {
     const seg = (end - hs) / 4, sh = Math.min(30, seg / 2), tt = t - hs, i = Math.floor(tt / seg), into = tt - i * seg, st = seg - sh;
     let cls = 'zpill', html;
@@ -380,7 +455,7 @@ function tick() {
 
 /* ---------- slide-up panel ---------- */
 const dock = $('dock'); let dockOpen = false, pausedOpened = false;
-const peekPx = () => parseFloat(getComputedStyle($('game')).getPropertyValue('--peek')) || 116;
+const peekPx = () => parseFloat(getComputedStyle($('game')).getPropertyValue('--peek')) || 82;
 function setDock(v) { dockOpen = v; dock.classList.toggle('open', v); dock.style.transform = ''; dock.style.transition = ''; $('grab').setAttribute('aria-expanded', String(v)); }
 {
   const g = $('grab'); let y0 = null, base = 0, moved = 0;
@@ -391,7 +466,7 @@ function setDock(v) { dockOpen = v; dock.classList.toggle('open', v); dock.style
   g.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setDock(!dockOpen); } });
 }
 
-/* ---------- stop / resume / edit rules / restart / end (host only) ---------- */
+/* ---------- host controls ---------- */
 $('pauseBtn').onclick = async () => { const { error } = await sb.rpc(isPaused() ? 'resume_game' : 'pause_game', { g: gid }); if (error) fail(error); else { await loadGame(); toast(isPaused() ? 'Game paused for everyone' : 'Game resumed'); } };
 $('rulesBtn').onclick = () => {
   if (!isPaused()) return toast('Pause the game first to change the rules');
@@ -412,14 +487,14 @@ $('endBtn').onclick = () => sheet((s) => {
   const y = el('button', '', 'Yes, end the game'); y.onclick = async () => { closeSheet(); const { error } = await sb.rpc('end_game', { g: gid }); if (error) fail(error); else loadGame(); };
   const n = el('button', 'o', 'Keep playing'); n.style.marginTop = '8px'; n.onclick = closeSheet; s.appendChild(y); s.appendChild(n);
 });
-// a restarted round: forget everything from the old one
+
 function restartLocal() {
   dist = 0; outT = 0; lastPing = ''; pendingShown = ''; lastSend = 0; tags = {}; seenTag.clear();
   if (pts) pts.showPings([], nowMs());
   toast('The host restarted the round');
 }
 
-/* ---------- tagging: seeker claims, hider confirms ---------- */
+/* ---------- tagging ---------- */
 $('tagBtn').onclick = () => sheet((s) => {
   s.appendChild(el('h2', '', 'Who did you tag?')); s.appendChild(el('p', '', 'The hider has to confirm on their phone.'));
   const f = freeHiders(); if (!f.length) s.appendChild(el('p', '', 'No free hiders left.'));
@@ -444,7 +519,7 @@ function onTags() {
   });
 }
 
-/* ---------- results (saved to the player database) ---------- */
+/* ---------- results ---------- */
 async function finish(winner) {
   if (finished) return; finished = true; clearInterval(loop); loop = null; clearInterval(poll); closeSheet();
   if (watchId != null) navigator.geolocation.clearWatch(watchId); if (pts) { pts.destroy(); pts = null; }
