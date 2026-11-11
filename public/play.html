@@ -26,7 +26,7 @@
     paint();
   });
   document.addEventListener('pointerdown', function (e) {
-    var el = e.target.closest && e.target.closest('button,.btn,.chip,.tab a,.q,.role,.sb-link,.ab-btn'); if (!el || el.disabled) return;
+    var el = e.target.closest && e.target.closest('button,.btn,.chip,.tab a,.q,.role,.sb-link,.ab-btn,.avatar-opt'); if (!el || el.disabled) return;
     var b = el.getBoundingClientRect(), s = Math.max(b.width, b.height) * 2.2, d = document.createElement('span');
     d.className = 'rip'; d.style.cssText = 'width:' + s + 'px;height:' + s + 'px;left:' + (e.clientX - b.left - s / 2) + 'px;top:' + (e.clientY - b.top - s / 2) + 'px';
     el.appendChild(d); setTimeout(function () { d.remove(); }, 700);
@@ -51,7 +51,7 @@
 <div id="inviteBanner" class="inv-banner" hidden>
   <div class="inv-box">
     <span class="inv-icon">⚡</span>
-    <div class="inv-txt"><b id="invFrom">Player</b> wants to play Blackout with you!</div>
+    <div class="inv-txt"><b id="invFrom">Player</b> invited you to join a game!</div>
     <div class="inv-act"><button id="invAccept" class="btn-sm">Join Game</button><button id="invDecline" class="btn-sm o">✕</button></div>
   </div>
 </div>
@@ -77,15 +77,16 @@
 <div id="sbOverlay" class="sb-overlay"></div>
 <aside id="sidebar" class="sidebar">
   <div class="sb-top">
-    <div class="sb-prof">
-      <span class="sb-avatar" id="sbAvatar">P</span>
-      <div><b id="sbName">Player</b><span class="sb-sub" id="sbRole">Agent</span></div>
+    <div class="sb-prof" id="sbProfClick" title="Open Settings">
+      <span class="sb-avatar" id="sbAvatar">🐺</span>
+      <div><b id="sbName">Player</b><span class="sb-sub" id="sbRole">Agent Profile ⚙️</span></div>
     </div>
     <button id="sbClose" class="sb-x" type="button" aria-label="Close menu">✕</button>
   </div>
   <nav class="sb-nav">
     <button class="sb-link on" data-target="home" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Home / Play</button>
-    <button class="sb-link" id="sbFriendsBtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Friends & Invites <span class="sb-badge" id="friendBadge" hidden>0</span></button>
+    <button class="sb-link" id="sbFriendsBtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Friends &amp; Squad <span class="sb-badge" id="friendBadge" hidden>0</span></button>
+    <button class="sb-link" id="sbSettingsBtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Game Settings</button>
     <button class="sb-link" id="sbAbilitiesBtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>Special Abilities</button>
     <button class="sb-link" id="sbRulesBtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>Rules &amp; Dynamic Zones</button>
   </nav>
@@ -94,17 +95,30 @@
   </div>
 </aside>
 
-<!-- Friends Modal -->
+<!-- Friends Modal with UID Search & Dropdown Autocomplete -->
 <div id="friendsModal" class="sp-modal" hidden>
   <div class="sp-box fr-box">
     <div class="sp-head">
-      <div><h2>Friends &amp; Squad</h2><p>Send friend requests &amp; invite friends to games</p></div>
+      <div><h2>Friends &amp; Squad</h2><p>Search by Display Name or Player UID</p></div>
       <button class="sp-close" id="frClose" type="button">✕</button>
     </div>
-    <div class="fr-add">
-      <input id="frInput" type="text" placeholder="Friend display name..." maxlength="14">
-      <button id="frAddBtn" class="btn-sm" type="button">Add Friend</button>
+    
+    <!-- User's own UID badge with 1-click copy -->
+    <div class="my-uid-box">
+      <div class="uid-meta"><span>YOUR PLAYER UID</span><b id="myUidText">Loading...</b></div>
+      <button id="copyUidBtn" class="btn-sm o" type="button">Copy UID</button>
     </div>
+
+    <!-- Friend Search Input with Live Dropdown Container -->
+    <div class="fr-search-wrap">
+      <div class="fr-add">
+        <input id="frInput" type="text" placeholder="Type player name or paste UID..." autocomplete="off">
+        <button id="frAddBtn" class="btn-sm" type="button">Send Request</button>
+      </div>
+      <!-- Live Dropdown list of matching players -->
+      <div id="frDropdown" class="fr-dropdown" hidden></div>
+    </div>
+
     <div class="fr-section">
       <div class="mono">PENDING REQUESTS (<span id="frReqCount">0</span>)</div>
       <div id="frReqList" class="fr-list"></div>
@@ -113,6 +127,84 @@
       <div class="mono">FRIENDS LIST (<span id="frCount">0</span>)</div>
       <div id="frList" class="fr-list"></div>
     </div>
+  </div>
+</div>
+
+<!-- Mobile-Game Inspired Settings Modal -->
+<div id="settingsModal" class="sp-modal" hidden>
+  <div class="sp-box st-box">
+    <div class="sp-head">
+      <div><h2>Game Settings</h2><p>Customize your identity, account &amp; play style</p></div>
+      <button class="sp-close" id="stClose" type="button">✕</button>
+    </div>
+
+    <!-- Settings Navigation Tabs -->
+    <div class="st-tabs">
+      <button class="st-tab-btn on" data-stab="profile" type="button">👤 Profile</button>
+      <button class="st-tab-btn" data-stab="account" type="button">🔐 Account</button>
+      <button class="st-tab-btn" data-stab="gameplay" type="button">🎮 Gameplay</button>
+    </div>
+
+    <!-- TAB 1: Profile & Avatar Customization -->
+    <div id="stab-profile" class="st-panel on">
+      <label class="fl">Agent Display Name
+        <input id="stNameInput" type="text" maxlength="14" placeholder="Your in-game name">
+      </label>
+      <label class="fl">Choose In-Game Avatar</label>
+      <div class="avatar-grid" id="avatarGrid">
+        <button class="avatar-opt on" data-av="🐺" type="button"><span>🐺</span><small>Hunter</small></button>
+        <button class="avatar-opt" data-av="👻" type="button"><span>👻</span><small>Ghost</small></button>
+        <button class="avatar-opt" data-av="⚡" type="button"><span>⚡</span><small>Sprinter</small></button>
+        <button class="avatar-opt" data-av="🦅" type="button"><span>🦅</span><small>Falcon</small></button>
+        <button class="avatar-opt" data-av="🦊" type="button"><span>🦊</span><small>Shadow</small></button>
+        <button class="avatar-opt" data-av="🎯" type="button"><span>🎯</span><small>Sniper</small></button>
+        <button class="avatar-opt" data-av="🐯" type="button"><span>🐯</span><small>Stalker</small></button>
+        <button class="avatar-opt" data-av="🛡️" type="button"><span>🛡️</span><small>Sentinel</small></button>
+      </div>
+      <button id="saveProfileBtn" class="btn" type="button" style="margin-top:14px">Save Profile</button>
+    </div>
+
+    <!-- TAB 2: Linked Account & Password -->
+    <div id="stab-account" class="st-panel">
+      <div class="card" style="margin-bottom:12px">
+        <p class="mono">LINKED ACCOUNT</p>
+        <div class="row" style="align-items:center;justify-content:space-between">
+          <div><b id="stEmail">user@example.com</b><p class="mu" style="margin:2px 0 0;font-size:12px" id="stProvider">Signed in with Email</p></div>
+          <span class="chip a" id="stBadge">LINKED</span>
+        </div>
+      </div>
+      <div class="card">
+        <p class="mono">UPDATE PASSWORD</p>
+        <input id="stNewPw" type="password" placeholder="New strong password" style="margin-bottom:8px">
+        <button id="stUpdatePwBtn" class="btn o" type="button" style="height:42px;font-size:13.5px">Change Password</button>
+      </div>
+    </div>
+
+    <!-- TAB 3: Gameplay, Haptics & Map Preferences -->
+    <div id="stab-gameplay" class="st-panel">
+      <div class="card" style="margin-bottom:10px">
+        <p class="mono">RADAR &amp; HAPTICS</p>
+        <label class="rg chk"><input type="checkbox" id="stVibe" checked><span>Haptic vibration on pings &amp; red zone alerts</span></label>
+      </div>
+      <div class="card" style="margin-bottom:10px">
+        <p class="mono">DEFAULT MOVEMENT MODE</p>
+        <div id="stModes" style="display:flex;gap:6px;margin-top:8px">
+          <button class="chip a" data-pm="run" type="button">Run</button>
+          <button class="chip" data-pm="walk" type="button">Walk</button>
+          <button class="chip" data-pm="ride" type="button">Ride</button>
+        </div>
+      </div>
+      <div class="card">
+        <p class="mono">MAP STYLE PREFERENCE</p>
+        <select id="stMapSelect" style="width:100%;height:44px;border-radius:6px;border:1.5px solid var(--line);background:var(--inp);color:var(--tx);font-weight:600;padding:0 10px;margin-top:6px">
+          <option value="Dark">Dark Gray Base (Tactical)</option>
+          <option value="Streets">Streets Map</option>
+          <option value="Satellite">Satellite Imagery</option>
+          <option value="Hybrid">Hybrid Aerial</option>
+        </select>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -126,6 +218,7 @@
     <a class="logo" href="index.html"><svg width="36" height="36" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="15" fill="#2A1A0E"/><path fill-rule="evenodd" fill="#F4AE52" transform="translate(-1 8) scale(.78)" d="M11 14H27C34 14 38 18 38 23.5C38 28 35.5 30.5 32 31.5C36.5 32.5 40 35.5 40 41C40 47 35.5 50 28 50H11ZM19 20.5V27.5H26C29.5 27.5 31 26 31 24C31 22 29.5 20.5 26 20.5ZM19 34.5V43.5H27C31 43.5 32.5 42 32.5 39C32.5 36 31 34.5 27 34.5Z"/><circle cx="45.5" cy="33" r="10" fill="none" stroke="#D4621A" stroke-width="7"/></svg>BLACKOUT</a>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
+    <button id="hdrSettings" class="hdr-btn" type="button" aria-label="Settings">⚙️</button>
     <button id="hdrFriends" class="hdr-btn" type="button" aria-label="Friends">👥<span id="hdrBadge" class="h-badge" hidden></span></button>
     <span id="themeSlot"></span>
   </div>
@@ -141,7 +234,7 @@
     <div class="jr"><input id="code" type="text" placeholder="JOIN CODE" maxlength="6" autocapitalize="characters" autocomplete="off"><button class="o" id="join" type="button">Join</button></div>
     <div style="display:flex;justify-content:space-between;margin-top:14px">
       <button class="lnk" id="quickFriends" type="button">👥 Manage Friends</button>
-      <button class="lnk" id="so" type="button">Sign out</button>
+      <button class="lnk" id="quickSettings" type="button">⚙️ Settings</button>
     </div>
   </div>
 </div></section>
@@ -248,12 +341,12 @@ html{background:var(--bg)}
 :root[data-theme="light"] .tg svg.sun,:root[data-theme="dark"] .tg svg.moon{color:var(--onp)}
 .tg:hover{transform:scale(1.06)}.tg:active{transform:scale(.92)}.tg:focus-visible{outline:2px solid var(--yl);outline-offset:3px}
 .tg.fl{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));right:14px;z-index:9998}
-button,.btn,.chip,.tab a,.q,.mapbtn,.role,.sb-link,.ab-btn{position:relative;overflow:hidden;-webkit-tap-highlight-color:transparent;transition:transform .45s cubic-bezier(.34,1.56,.64,1),box-shadow .4s ease,background-color .3s ease,color .3s ease,filter .3s ease,opacity .3s ease!important}
+button,.btn,.chip,.tab a,.q,.mapbtn,.role,.sb-link,.ab-btn,.avatar-opt{position:relative;overflow:hidden;-webkit-tap-highlight-color:transparent;transition:transform .45s cubic-bezier(.34,1.56,.64,1),box-shadow .4s ease,background-color .3s ease,color .3s ease,filter .3s ease,opacity .3s ease!important}
 @media (hover:hover){
-  .btn:hover,button:not(.q):not(.mapbtn):not(.tg):not(:disabled):hover,.chip:hover,.role:hover,.sb-link:hover,.ab-btn:hover{transform:translateY(-2px) scale(1.03)!important;box-shadow:0 12px 30px color-mix(in srgb,var(--yl) 38%,transparent)}
+  .btn:hover,button:not(.q):not(.mapbtn):not(.tg):not(:disabled):hover,.chip:hover,.role:hover,.sb-link:hover,.ab-btn:hover,.avatar-opt:hover{transform:translateY(-2px) scale(1.03)!important;box-shadow:0 12px 30px color-mix(in srgb,var(--yl) 38%,transparent)}
   .tab a:hover{transform:translateY(-1px)}
 }
-.btn:active,button:not(.q):not(.tg):not(:disabled):active,.chip:active,.role:active,.tab a:active,.sb-link:active,.ab-btn:active{transform:scale(.94)!important;transition-duration:.12s!important;box-shadow:none}
+.btn:active,button:not(.q):not(.tg):not(:disabled):active,.chip:active,.role:active,.tab a:active,.sb-link:active,.ab-btn:active,.avatar-opt:active{transform:scale(.94)!important;transition-duration:.12s!important;box-shadow:none}
 button:disabled{cursor:not-allowed}
 .rip{position:absolute;border-radius:50%;background:currentColor;opacity:.28;transform:scale(0);animation:rip .65s cubic-bezier(.2,.7,.3,1) forwards;pointer-events:none}
 @keyframes rip{to{transform:scale(1);opacity:0}}
