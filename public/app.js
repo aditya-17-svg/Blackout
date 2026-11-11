@@ -5,13 +5,13 @@ import { getPts, toLL, pip, offsetOf, randomArea, areaLabel, previewSvg, openAre
 
 const $ = (i) => document.getElementById(i);
 const MET = { run: 9.8, walk: 3.8, ride: 7.5 };
-let uid, myName = 'Player', gid, game, players = {}, tags = {}, mode = 'run', skew = 0, poll, chan;
+let uid, myName = 'Player', myAvatar = '🐺', gid, game, players = {}, tags = {}, mode = 'run', skew = 0, poll, chan;
 let started = false;
 let map, zone, redLayers = [], me, pts, watchId = null, follow = true, firstFix = true, lastGpsErr = 0, dist = 0, lastPos, lastSend = 0, loop, finished = false, outT = 0, pendingShown = '', lastPing = '', startedMap = false;
 let releasingPing = false, lastPingFetch = 0;
 
-/* ---------- 1. Friends & Game Invites Engine ---------- */
-let myFriends = [], pendingRequests = [], activeInvite = null;
+/* ---------- 1. Friends & UID Live Search Engine ---------- */
+let myFriends = [], pendingRequests = [], activeInvite = null, searchTimer = null;
 
 async function loadFriends() {
   try {
@@ -25,7 +25,6 @@ async function loadFriends() {
     });
     myFriends = friends; pendingRequests = requests;
   } catch (e) {
-    // Graceful fallback to client storage if table is not yet migrated
     myFriends = JSON.parse(localStorage.getItem('mf_friends_' + uid) || '[]');
     pendingRequests = JSON.parse(localStorage.getItem('mf_reqs_' + uid) || '[]');
   }
@@ -68,19 +67,83 @@ function renderFriendsUI() {
   });
 }
 
-async function addFriend(name) {
-  name = name.trim();
-  if (!name || name === myName) return toast('Type a valid friend name');
+// Live Autocomplete dropdown search by Name or UID
+$('frInput').addEventListener('input', () => {
+  clearTimeout(searchTimer);
+  const q = $('frInput').value.trim();
+  if (q.length < 2) { $('frDropdown').hidden = true; return; }
+  searchTimer = setTimeout(() => searchPlayersDropdown(q), 250);
+});
+
+async function searchPlayersDropdown(query) {
+  const dd = $('frDropdown'); dd.replaceChildren();
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}/i.test(query);
+
   try {
-    const { data: prof } = await sb.from('profiles').select('id,display_name').ilike('display_name', name).maybeSingle();
-    const friendId = prof ? prof.id : 'f_' + Math.random().toString(36).slice(2, 8);
-    const friendName = prof ? prof.display_name : name;
+    let playersFound = [];
+    if (isUuid) {
+      const { data } = await sb.from('profiles').select('id,display_name,avatar').eq('id', query).limit(5);
+      playersFound = data || [];
+    } else {
+      const { data } = await sb.from('profiles').select('id,display_name,avatar').ilike('display_name', `%${query}%`).neq('id', uid).limit(6);
+      playersFound = data || [];
+    }
+
+    if (!playersFound.length) {
+      dd.appendChild(el('div', 'fr-drop-item', 'No players found matching "' + query + '"'));
+      dd.hidden = false;
+      return;
+    }
+
+    playersFound.forEach((p) => {
+      const it = el('div', 'fr-drop-item');
+      const info = el('div', 'fr-drop-info');
+      info.appendChild(el('span', 'fr-drop-av', p.avatar || '🐺'));
+      const textWrap = el('div');
+      textWrap.appendChild(el('span', 'fr-drop-name', p.display_name || 'Player'));
+      textWrap.appendChild(el('small', 'fr-drop-uid', 'UID: ' + p.id.slice(0, 8) + '...'));
+      info.appendChild(textWrap);
+
+      const addBtn = el('button', 'btn-sm', '+ Add');
+      addBtn.onclick = (e) => {
+        e.stopPropagation();
+        addFriend(p.id, p.display_name);
+        $('frInput').value = '';
+        dd.hidden = true;
+      };
+
+      it.append(info, addBtn);
+      it.onclick = () => { $('frInput').value = p.display_name; dd.hidden = true; };
+      dd.appendChild(it);
+    });
+    dd.hidden = false;
+  } catch (e) {
+    dd.hidden = true;
+  }
+}
+
+async function addFriend(targetIdOrName, directName = null) {
+  const input = targetIdOrName.trim();
+  if (!input || input === uid || input === myName) return toast('Type a valid player name or UID');
+
+  try {
+    let friendId = directName ? targetIdOrName : null;
+    let friendName = directName;
+
+    if (!friendId) {
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}/i.test(input);
+      const query = isUuid ? sb.from('profiles').select('id,display_name').eq('id', input) : sb.from('profiles').select('id,display_name').ilike('display_name', input);
+      const { data } = await query.maybeSingle();
+      if (data) { friendId = data.id; friendName = data.display_name; }
+      else { friendId = 'f_' + Math.random().toString(36).slice(2, 8); friendName = input; }
+    }
+
     await sb.from('friendships').upsert({ user_id: uid, friend_id: friendId, user_name: myName, friend_name: friendName, status: 'pending' });
     toast('Friend request sent to ' + friendName);
   } catch (e) {
-    myFriends.push({ id: 'f_' + Date.now(), name });
+    myFriends.push({ id: 'f_' + Date.now(), name: directName || input });
     localStorage.setItem('mf_friends_' + uid, JSON.stringify(myFriends));
-    toast('Added ' + name + ' to friends');
+    toast('Added to friends');
   }
   loadFriends();
 }
@@ -119,12 +182,92 @@ function showInvite(inv) {
   $('invFrom').textContent = inv.from_name || 'A player';
   $('inviteBanner').hidden = false;
 }
-$('invAccept').onclick = () => {
-  if (activeInvite) { $('code').value = activeInvite.code; $('inviteBanner').hidden = true; $('join').click(); }
-};
+$('invAccept').onclick = () => { if (activeInvite) { $('code').value = activeInvite.code; $('inviteBanner').hidden = true; $('join').click(); } };
 $('invDecline').onclick = () => { $('inviteBanner').hidden = true; activeInvite = null; };
 
-/* ---------- 2. Sidebar Navigation ---------- */
+// 1-Click Copy Player UID
+$('copyUidBtn').onclick = () => {
+  navigator.clipboard.writeText(uid);
+  toast('Player UID copied to clipboard!');
+};
+
+/* ---------- 2. Mobile Game Inspired Settings Engine ---------- */
+const openSettingsModal = () => {
+  toggleSidebar(false);
+  $('settingsModal').hidden = false;
+  $('stNameInput').value = myName;
+  document.querySelectorAll('.avatar-opt').forEach((btn) => {
+    btn.classList.toggle('on', btn.dataset.av === myAvatar);
+  });
+  if (session && session.user) {
+    $('stEmail').textContent = session.user.email || 'Anonymous';
+    $('stProvider').textContent = session.user.app_metadata.provider ? 'Signed in via ' + session.user.app_metadata.provider.toUpperCase() : 'Email Password';
+  }
+};
+
+$('hdrSettings').onclick = openSettingsModal;
+$('quickSettings').onclick = openSettingsModal;
+$('sbSettingsBtn').onclick = openSettingsModal;
+$('sbProfClick').onclick = openSettingsModal;
+$('stClose').onclick = () => { $('settingsModal').hidden = true; };
+
+// Settings tab switching
+document.querySelectorAll('.st-tab-btn').forEach((btn) => {
+  btn.onclick = () => {
+    document.querySelectorAll('.st-tab-btn').forEach((b) => b.classList.remove('on'));
+    document.querySelectorAll('.st-panel').forEach((p) => p.classList.remove('on'));
+    btn.classList.add('on');
+    const target = $('stab-' + btn.dataset.stab);
+    if (target) target.classList.add('on');
+  };
+});
+
+// Avatar selection
+document.querySelectorAll('.avatar-opt').forEach((btn) => {
+  btn.onclick = () => {
+    document.querySelectorAll('.avatar-opt').forEach((b) => b.classList.remove('on'));
+    btn.classList.add('on');
+    myAvatar = btn.dataset.av;
+  };
+});
+
+// Save Profile (Name & Avatar)
+$('saveProfileBtn').onclick = async () => {
+  const n = ($('stNameInput').value || myName).trim().slice(0, 14);
+  if (n.length >= 2) myName = n;
+  $('sbName').textContent = myName;
+  $('sbAvatar').textContent = myAvatar;
+  $('name').value = myName;
+  localStorage.setItem('mf_avatar_' + uid, myAvatar);
+  try {
+    await sb.from('profiles').update({ display_name: myName, avatar: myAvatar }).eq('id', uid);
+    await sb.auth.updateUser({ data: { display_name: myName, avatar: myAvatar } });
+  } catch (e) {}
+  $('settingsModal').hidden = true;
+  toast('Profile & Avatar saved!');
+};
+
+// Change Password
+$('stUpdatePwBtn').onclick = async () => {
+  const pw = $('stNewPw').value;
+  if (!pw || pw.length < 8) return toast('Password must be at least 8 characters');
+  try {
+    const { error } = await sb.auth.updateUser({ password: pw });
+    if (error) throw error;
+    $('stNewPw').value = '';
+    toast('Password updated successfully!');
+  } catch (e) {
+    fail(e, 'Could not update password');
+  }
+};
+
+// Map Style preference in Settings
+$('stMapSelect').onchange = () => {
+  localStorage.setItem('mf_map', $('stMapSelect').value);
+  toast('Default map set to ' + $('stMapSelect').value);
+};
+
+/* ---------- 3. Sidebar Navigation ---------- */
 const sidebar = $('sidebar'), sbOverlay = $('sbOverlay');
 function toggleSidebar(open) { sidebar.classList.toggle('on', open); sbOverlay.classList.toggle('on', open); }
 $('menuBtn').onclick = () => toggleSidebar(true);
@@ -136,8 +279,8 @@ $('sbFriendsBtn').onclick = openFriendsModal;
 $('hdrFriends').onclick = openFriendsModal;
 $('quickFriends').onclick = openFriendsModal;
 $('inviteFriendsBtn').onclick = openFriendsModal;
-$('frClose').onclick = () => { $('friendsModal').hidden = true; };
-$('frAddBtn').onclick = () => { addFriend($('frInput').value); $('frInput').value = ''; };
+$('frClose').onclick = () => { $('friendsModal').hidden = true; $('frDropdown').hidden = true; };
+$('frAddBtn').onclick = () => { addFriend($('frInput').value); $('frInput').value = ''; $('frDropdown').hidden = true; };
 
 $('sbAbilitiesBtn').onclick = () => {
   toggleSidebar(false);
@@ -164,7 +307,7 @@ $('sbRulesBtn').onclick = () => {
 };
 $('sbOut').onclick = () => sb.auth.signOut().then(() => location.replace('auth.html'));
 
-/* ---------- 3. Special Abilities Engine ---------- */
+/* ---------- 4. Special Abilities Engine ---------- */
 const abilities = {
   ghost: { active: false, cd: 0, maxCd: 45, dur: 15 },
   decoy: { active: false, cd: 0, maxCd: 30 },
@@ -240,7 +383,7 @@ function tickAbilities() {
   updateAbilitiesUI();
 }
 
-/* ---------- 4. General App Setup ---------- */
+/* ---------- 5. General App Setup ---------- */
 const toast = (m) => { const e = $('toast'); e.textContent = m; e.classList.add('on'); setTimeout(() => e.classList.remove('on'), 2600); };
 const show = (id) => { document.querySelectorAll('.scr').forEach((s) => s.classList.toggle('on', s.id === id)); document.body.classList.toggle('ingame', id === 'game'); };
 const pos = () => new Promise((res, rej) => navigator.geolocation.getCurrentPosition((p) => res({ lat: p.coords.latitude, lng: p.coords.longitude }), rej, { timeout: 10000, maximumAge: 60000 }));
@@ -266,9 +409,11 @@ uid = session.user.id;
 sb.auth.onAuthStateChange((ev) => { if (ev === 'SIGNED_OUT') location.replace('auth.html'); });
 const { data: prof } = await sb.from('profiles').select('*').eq('id', uid).maybeSingle();
 myName = (prof && prof.display_name) || 'Player';
+myAvatar = (prof && prof.avatar) || localStorage.getItem('mf_avatar_' + uid) || '🐺';
 $('name').value = myName;
 $('sbName').textContent = myName;
-$('sbAvatar').textContent = myName.charAt(0).toUpperCase();
+$('sbAvatar').textContent = myAvatar;
+$('myUidText').textContent = uid;
 homeCards(prof);
 loadFriends();
 listenInvites();
@@ -464,7 +609,6 @@ function drawZone(fit) {
   zone = (areaPts ? L.polygon(toLL(c, areaPts, (radius() * 2) / r.zoneM), zs) : L.circle(c, { radius: radius(), ...zs })).addTo(map);
   zoneKey = keyOf();
 
-  // Dynamic Hazard Red Zones (when zone > 30m)
   if (r.zoneM > 30) {
     currentRedZones = createRedZones(c, radius(), 2);
     currentRedZones.forEach((rz) => {
@@ -484,7 +628,6 @@ function insideRedZone() {
 function updateZone(rad) {
   if (!zone) return;
   if (areaPts) zone.setLatLngs(toLL(gc(), areaPts, (rad * 2) / rl().zoneM)); else zone.setRadius(rad);
-  // Red zones adapt to dynamic shrinking radius
   if (rad <= 30 && redLayers.length) { redLayers.forEach((l) => l.remove()); redLayers = []; currentRedZones = []; }
 }
 function insideZone(rad) {
@@ -495,8 +638,9 @@ function insideZone(rad) {
 
 function buildMap() {
   map = L.map('map', { zoomControl: false }).setView(gc(), 15);
-  const setBase = (n) => { BASES[n].layers.forEach((l) => L.tileLayer(l[0], l[1]).addTo(map)); };
-  setBase('Dark');
+  const preferred = localStorage.getItem('mf_map') || 'Dark';
+  const base = BASES[preferred] || BASES.Dark;
+  base.layers.forEach((l) => L.tileLayer(l[0], l[1]).addTo(map));
   pts = createPoints(map, { now: nowMs });
   const lg = L.control({ position: 'bottomleft' });
   lg.onAdd = () => { const d = L.DomUtil.create('div', 'legend'); d.innerHTML = '<span><i style="background:#D4621A"></i>Seeker</span><span><i style="background:#F4AE52"></i>Hider</span><span><i style="background:#B3261E"></i>Red Zone</span>'; return d; };
@@ -529,7 +673,7 @@ async function loadPings() {
   pts.showPings(data.hiders || [], Date.parse(data.taken_at));
   if (!first || nowMs() - Date.parse(data.taken_at) < 25000) {
     toast('PING! Hiders located');
-    if (navigator.vibrate) try { navigator.vibrate([70, 50, 70]); } catch (e) {}
+    if ($('stVibe').checked && navigator.vibrate) try { navigator.vibrate([70, 50, 70]); } catch (e) {}
   }
 }
 
