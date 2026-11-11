@@ -5,7 +5,27 @@ import { getPts, toLL, pip, offsetOf, randomArea, areaLabel, previewSvg, openAre
 
 const $ = (i) => document.getElementById(i);
 const MET = { run: 9.8, walk: 3.8, ride: 7.5 };
-let uid, myName = 'Player', myAvatar = '🐺', gid, game, players = {}, tags = {}, mode = 'run', skew = 0, poll, chan;
+
+// Official 15 Blackout High-Fidelity Avatars
+export const AVATARS = [
+  { id: 'avatars/avatar_01.png', name: 'Blitz' },
+  { id: 'avatars/avatar_02.png', name: 'Kicks' },
+  { id: 'avatars/avatar_03.png', name: 'Brawler' },
+  { id: 'avatars/avatar_04.png', name: 'Cruiser' },
+  { id: 'avatars/avatar_05.png', name: 'Aero' },
+  { id: 'avatars/avatar_06.png', name: 'Chrono' },
+  { id: 'avatars/avatar_07.png', name: 'Iron' },
+  { id: 'avatars/avatar_08.png', name: 'Shark' },
+  { id: 'avatars/avatar_09.png', name: 'Gator' },
+  { id: 'avatars/avatar_10.png', name: 'Ape' },
+  { id: 'avatars/avatar_11.png', name: 'Stag' },
+  { id: 'avatars/avatar_12.png', name: 'Ram' },
+  { id: 'avatars/avatar_13.png', name: 'Fox' },
+  { id: 'avatars/avatar_14.png', name: 'Hare' },
+  { id: 'avatars/avatar_15.png', name: 'Bear' }
+];
+
+let uid, myName = 'Player', myAvatar = 'avatars/avatar_01.png', gid, game, players = {}, tags = {}, mode = 'run', skew = 0, poll, chan;
 let started = false;
 let map, zone, redLayers = [], me, pts, watchId = null, follow = true, firstFix = true, lastGpsErr = 0, dist = 0, lastPos, lastSend = 0, loop, finished = false, outT = 0, pendingShown = '', lastPing = '', startedMap = false;
 let releasingPing = false, lastPingFetch = 0;
@@ -18,10 +38,10 @@ async function loadFriends() {
     const { data: sent } = await sb.from('friendships').select('*').eq('user_id', uid);
     const { data: rcv } = await sb.from('friendships').select('*').eq('friend_id', uid);
     const friends = [], requests = [];
-    (sent || []).forEach((f) => { if (f.status === 'accepted') friends.push({ id: f.friend_id, name: f.friend_name || 'Player' }); });
+    (sent || []).forEach((f) => { if (f.status === 'accepted') friends.push({ id: f.friend_id, name: f.friend_name || 'Player', avatar: f.friend_avatar || 'avatars/avatar_01.png' }); });
     (rcv || []).forEach((f) => {
-      if (f.status === 'accepted') friends.push({ id: f.user_id, name: f.user_name || 'Player' });
-      else if (f.status === 'pending') requests.push({ id: f.id, from_id: f.user_id, name: f.user_name || 'Player' });
+      if (f.status === 'accepted') friends.push({ id: f.user_id, name: f.user_name || 'Player', avatar: f.user_avatar || 'avatars/avatar_01.png' });
+      else if (f.status === 'pending') requests.push({ id: f.id, from_id: f.user_id, name: f.user_name || 'Player', avatar: f.user_avatar || 'avatars/avatar_01.png' });
     });
     myFriends = friends; pendingRequests = requests;
   } catch (e) {
@@ -43,11 +63,15 @@ function renderFriendsUI() {
   if (!pendingRequests.length) reqList.appendChild(el('p', 'mu', 'No pending requests'));
   pendingRequests.forEach((r) => {
     const it = el('div', 'fr-item');
-    it.appendChild(el('span', 'fr-name', r.name));
+    const info = el('div', 'fr-info');
+    const av = el('img', 'av-mini'); av.src = r.avatar || 'avatars/avatar_01.png';
+    info.append(av, el('span', 'fr-name', r.name));
     const btns = el('div', 'row');
     const acc = el('button', 'btn-sm', 'Accept'); acc.onclick = () => answerFriend(r, true);
     const dec = el('button', 'btn-sm o', '✕'); dec.onclick = () => answerFriend(r, false);
-    btns.append(acc, dec); it.appendChild(btns); reqList.appendChild(it);
+    btns.append(acc, dec);
+    it.append(info, btns);
+    reqList.appendChild(it);
   });
 
   const fList = $('frList'); fList.replaceChildren();
@@ -55,8 +79,8 @@ function renderFriendsUI() {
   myFriends.forEach((f) => {
     const it = el('div', 'fr-item');
     const info = el('div', 'fr-info');
-    info.appendChild(el('span', 'fr-dot'));
-    info.appendChild(el('span', 'fr-name', f.name));
+    const av = el('img', 'av-mini'); av.src = f.avatar || 'avatars/avatar_01.png';
+    info.append(av, el('span', 'fr-name', f.name));
     it.appendChild(info);
     if (gid && game && game.status === 'lobby' && game.host === uid) {
       const inv = el('button', 'fr-btn', 'Invite to game');
@@ -98,7 +122,8 @@ async function searchPlayersDropdown(query) {
     playersFound.forEach((p) => {
       const it = el('div', 'fr-drop-item');
       const info = el('div', 'fr-drop-info');
-      info.appendChild(el('span', 'fr-drop-av', p.avatar || '🐺'));
+      const av = el('img', 'av-mini'); av.src = p.avatar || 'avatars/avatar_01.png';
+      info.appendChild(av);
       const textWrap = el('div');
       textWrap.appendChild(el('span', 'fr-drop-name', p.display_name || 'Player'));
       textWrap.appendChild(el('small', 'fr-drop-uid', 'UID: ' + p.id.slice(0, 8) + '...'));
@@ -107,7 +132,7 @@ async function searchPlayersDropdown(query) {
       const addBtn = el('button', 'btn-sm', '+ Add');
       addBtn.onclick = (e) => {
         e.stopPropagation();
-        addFriend(p.id, p.display_name);
+        addFriend(p.id, p.display_name, p.avatar);
         $('frInput').value = '';
         dd.hidden = true;
       };
@@ -122,26 +147,27 @@ async function searchPlayersDropdown(query) {
   }
 }
 
-async function addFriend(targetIdOrName, directName = null) {
+async function addFriend(targetIdOrName, directName = null, directAvatar = null) {
   const input = targetIdOrName.trim();
   if (!input || input === uid || input === myName) return toast('Type a valid player name or UID');
 
   try {
     let friendId = directName ? targetIdOrName : null;
     let friendName = directName;
+    let friendAvatar = directAvatar || 'avatars/avatar_01.png';
 
     if (!friendId) {
       const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}/i.test(input);
-      const query = isUuid ? sb.from('profiles').select('id,display_name').eq('id', input) : sb.from('profiles').select('id,display_name').ilike('display_name', input);
+      const query = isUuid ? sb.from('profiles').select('id,display_name,avatar').eq('id', input) : sb.from('profiles').select('id,display_name,avatar').ilike('display_name', input);
       const { data } = await query.maybeSingle();
-      if (data) { friendId = data.id; friendName = data.display_name; }
+      if (data) { friendId = data.id; friendName = data.display_name; friendAvatar = data.avatar || 'avatars/avatar_01.png'; }
       else { friendId = 'f_' + Math.random().toString(36).slice(2, 8); friendName = input; }
     }
 
-    await sb.from('friendships').upsert({ user_id: uid, friend_id: friendId, user_name: myName, friend_name: friendName, status: 'pending' });
+    await sb.from('friendships').upsert({ user_id: uid, friend_id: friendId, user_name: myName, friend_name: friendName, user_avatar: myAvatar, friend_avatar: friendAvatar, status: 'pending' });
     toast('Friend request sent to ' + friendName);
   } catch (e) {
-    myFriends.push({ id: 'f_' + Date.now(), name: directName || input });
+    myFriends.push({ id: 'f_' + Date.now(), name: directName || input, avatar: directAvatar || 'avatars/avatar_01.png' });
     localStorage.setItem('mf_friends_' + uid, JSON.stringify(myFriends));
     toast('Added to friends');
   }
@@ -154,7 +180,7 @@ async function answerFriend(r, accept) {
     else await sb.from('friendships').delete().eq('id', r.id);
   } catch (e) {
     pendingRequests = pendingRequests.filter((x) => x.id !== r.id);
-    if (accept) myFriends.push({ id: r.from_id, name: r.name });
+    if (accept) myFriends.push({ id: r.from_id, name: r.name, avatar: r.avatar || 'avatars/avatar_01.png' });
     localStorage.setItem('mf_reqs_' + uid, JSON.stringify(pendingRequests));
     localStorage.setItem('mf_friends_' + uid, JSON.stringify(myFriends));
   }
@@ -185,20 +211,42 @@ function showInvite(inv) {
 $('invAccept').onclick = () => { if (activeInvite) { $('code').value = activeInvite.code; $('inviteBanner').hidden = true; $('join').click(); } };
 $('invDecline').onclick = () => { $('inviteBanner').hidden = true; activeInvite = null; };
 
-// 1-Click Copy Player UID
 $('copyUidBtn').onclick = () => {
   navigator.clipboard.writeText(uid);
   toast('Player UID copied to clipboard!');
 };
 
-/* ---------- 2. Mobile Game Inspired Settings Engine ---------- */
+/* ---------- 2. Mobile Game Inspired Settings & 15 HD Avatars ---------- */
+function initAvatarGrid() {
+  const grid = $('avatarGrid'); grid.replaceChildren();
+  AVATARS.forEach((av) => {
+    const btn = el('button', 'avatar-opt' + (myAvatar === av.id ? ' on' : ''));
+    btn.type = 'button';
+    btn.dataset.av = av.id;
+
+    const wrap = el('div', 'av-wrap');
+    const img = el('img', 'av-img');
+    img.src = av.id;
+    img.alt = av.name;
+    wrap.appendChild(img);
+
+    const name = el('small', '', av.name);
+    btn.append(wrap, name);
+
+    btn.onclick = () => {
+      document.querySelectorAll('.avatar-opt').forEach((b) => b.classList.remove('on'));
+      btn.classList.add('on');
+      myAvatar = av.id;
+    };
+    grid.appendChild(btn);
+  });
+}
+
 const openSettingsModal = () => {
   toggleSidebar(false);
   $('settingsModal').hidden = false;
   $('stNameInput').value = myName;
-  document.querySelectorAll('.avatar-opt').forEach((btn) => {
-    btn.classList.toggle('on', btn.dataset.av === myAvatar);
-  });
+  initAvatarGrid();
   if (session && session.user) {
     $('stEmail').textContent = session.user.email || 'Anonymous';
     $('stProvider').textContent = session.user.app_metadata.provider ? 'Signed in via ' + session.user.app_metadata.provider.toUpperCase() : 'Email Password';
@@ -211,7 +259,6 @@ $('sbSettingsBtn').onclick = openSettingsModal;
 $('sbProfClick').onclick = openSettingsModal;
 $('stClose').onclick = () => { $('settingsModal').hidden = true; };
 
-// Settings tab switching
 document.querySelectorAll('.st-tab-btn').forEach((btn) => {
   btn.onclick = () => {
     document.querySelectorAll('.st-tab-btn').forEach((b) => b.classList.remove('on'));
@@ -222,21 +269,12 @@ document.querySelectorAll('.st-tab-btn').forEach((btn) => {
   };
 });
 
-// Avatar selection
-document.querySelectorAll('.avatar-opt').forEach((btn) => {
-  btn.onclick = () => {
-    document.querySelectorAll('.avatar-opt').forEach((b) => b.classList.remove('on'));
-    btn.classList.add('on');
-    myAvatar = btn.dataset.av;
-  };
-});
-
-// Save Profile (Name & Avatar)
+// Save Profile (Name & HD Avatar)
 $('saveProfileBtn').onclick = async () => {
   const n = ($('stNameInput').value || myName).trim().slice(0, 14);
   if (n.length >= 2) myName = n;
   $('sbName').textContent = myName;
-  $('sbAvatar').textContent = myAvatar;
+  $('sbAvatarImg').src = myAvatar;
   $('name').value = myName;
   localStorage.setItem('mf_avatar_' + uid, myAvatar);
   try {
@@ -247,7 +285,6 @@ $('saveProfileBtn').onclick = async () => {
   toast('Profile & Avatar saved!');
 };
 
-// Change Password
 $('stUpdatePwBtn').onclick = async () => {
   const pw = $('stNewPw').value;
   if (!pw || pw.length < 8) return toast('Password must be at least 8 characters');
@@ -261,7 +298,6 @@ $('stUpdatePwBtn').onclick = async () => {
   }
 };
 
-// Map Style preference in Settings
 $('stMapSelect').onchange = () => {
   localStorage.setItem('mf_map', $('stMapSelect').value);
   toast('Default map set to ' + $('stMapSelect').value);
@@ -409,10 +445,11 @@ uid = session.user.id;
 sb.auth.onAuthStateChange((ev) => { if (ev === 'SIGNED_OUT') location.replace('auth.html'); });
 const { data: prof } = await sb.from('profiles').select('*').eq('id', uid).maybeSingle();
 myName = (prof && prof.display_name) || 'Player';
-myAvatar = (prof && prof.avatar) || localStorage.getItem('mf_avatar_' + uid) || '🐺';
+const savedAv = (prof && prof.avatar) || localStorage.getItem('mf_avatar_' + uid);
+myAvatar = (savedAv && savedAv.startsWith('avatars/')) ? savedAv : 'avatars/avatar_01.png';
 $('name').value = myName;
 $('sbName').textContent = myName;
-$('sbAvatar').textContent = myAvatar;
+$('sbAvatarImg').src = myAvatar;
 $('myUidText').textContent = uid;
 homeCards(prof);
 loadFriends();
