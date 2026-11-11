@@ -80,6 +80,7 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
 .pt:hover{transform:scale(1.18)}
 .pt.me{box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 45%,transparent),0 2px 8px rgba(0,0,0,.5)}
 .pt.me:after,.pt.ping:after{content:"";position:absolute;inset:-12px;border-radius:50%;background:var(--c);opacity:.3;animation:pk 2s ease-out infinite;z-index:-1;pointer-events:none}
+.pt.decoy{filter:hue-rotate(180deg)}
 .ppop .leaflet-popup-content-wrapper{background:var(--card);color:var(--tx);border-radius:8px;border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.35)}
 .ppop .leaflet-popup-tip{background:var(--card)}
 .ppop .leaflet-popup-content{margin:12px 14px}
@@ -179,7 +180,9 @@ body.editing{overflow:hidden}
 .sp-name{font:700 13px var(--fb);color:var(--tx);margin-bottom:2px}
 .sp-desc{font:500 10px var(--fm);color:var(--mu);text-transform:uppercase;letter-spacing:.06em}
 
-/* ---------- 1. Left Sidebar Navigation ---------- */
+/* ---------- 1. Left Sidebar Navigation & Thematic Icons ---------- */
+.t-icon{width:20px;height:20px;color:currentColor;display:inline-block;vertical-align:middle;flex:none}
+.t-badge-icon{width:36px;height:36px;border-radius:8px;background:color-mix(in srgb,var(--B) 18%,var(--card));display:flex;align-items:center;justify-content:center;color:var(--B);flex:none}
 .menu-btn{all:unset;box-sizing:border-box;width:40px;height:40px;border-radius:8px;border:1.5px solid var(--line);background:var(--card);color:var(--tx);display:flex;align-items:center;justify-content:center;cursor:pointer}
 .sb-overlay{position:fixed;inset:0;z-index:9100;background:rgba(21,11,5,.55);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);opacity:0;pointer-events:none;transition:opacity .35s}
 .sb-overlay.on{opacity:1;pointer-events:auto}
@@ -187,13 +190,12 @@ body.editing{overflow:hidden}
 .sidebar.on{transform:translateX(0)}
 .sb-top{display:flex;justify-content:space-between;align-items:center;padding-bottom:18px;border-bottom:1px solid var(--line);margin-bottom:18px}
 .sb-prof{display:flex;align-items:center;gap:12px;cursor:pointer}
-.sb-avatar{width:46px;height:46px;border-radius:50%;background:color-mix(in srgb,var(--B) 20%,var(--card));border:2px solid var(--B);display:flex;align-items:center;justify-content:center;font-size:24px}
+.sb-avatar{width:48px;height:48px;border-radius:50%;overflow:hidden;background:color-mix(in srgb,var(--B) 16%,var(--card));border:2px solid var(--B);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,0.25);flex:none}
 .sb-prof b{display:block;font-size:16px;line-height:1.2}
 .sb-sub{font:500 10px var(--fm);letter-spacing:.1em;color:var(--ort);text-transform:uppercase}
 .sb-x{all:unset;width:34px;height:34px;border-radius:50%;background:var(--inp);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;cursor:pointer;font-weight:700}
 .sb-nav{display:flex;flex-direction:column;gap:6px;flex:1}
 .sb-link{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:8px;font:600 14.5px var(--fb);color:var(--mu);cursor:pointer;transition:background-color .2s,color .2s}
-.sb-link svg{width:20px;height:20px;color:currentColor;flex:none}
 .sb-link:hover{background:color-mix(in srgb,var(--B) 10%,transparent);color:var(--tx)}
 .sb-link.on{background:color-mix(in srgb,var(--B) 16%,transparent);color:var(--B);font-weight:700}
 .sb-badge{margin-left:auto;background:var(--B);color:#FEF3E2;font:700 10px var(--fm);padding:2px 7px;border-radius:99px}
@@ -201,7 +203,7 @@ body.editing{overflow:hidden}
 .sb-link.out{color:var(--bad)}
 
 /* ---------- 2. Friends System, UID Banner & Live Dropdown ---------- */
-.hdr-btn{all:unset;box-sizing:border-box;position:relative;width:40px;height:40px;border-radius:8px;border:1.5px solid var(--line);background:var(--card);color:var(--tx);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px}
+.hdr-btn{all:unset;box-sizing:border-box;position:relative;width:40px;height:40px;border-radius:8px;border:1.5px solid var(--line);background:var(--card);color:var(--tx);display:flex;align-items:center;justify-content:center;cursor:pointer}
 .h-badge{position:absolute;top:-4px;right:-4px;width:10px;height:10px;border-radius:50%;background:var(--B);box-shadow:0 0 0 2px var(--card)}
 .inv-banner{position:fixed;top:calc(12px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:9700;width:min(440px,94vw);animation:down .35s ease}
 @keyframes down{from{transform:translate(-50%,-100%);opacity:0}}
@@ -223,13 +225,11 @@ body.editing{overflow:hidden}
 .fr-add input{margin:0;height:44px;font-size:14px}
 .fr-add button{width:auto;flex:none;height:44px;padding:0 16px}
 
-/* Live Dropdown suggestions */
-.fr-dropdown{position:absolute;top:48px;left:0;right:0;z-index:100;background:var(--card);border:1.5px solid var(--B);border-radius:8px;box-shadow:0 14px 40px rgba(0,0,0,.5);max-height:180px;overflow-y:auto;animation:in .2s ease}
+.fr-dropdown{position:absolute;top:48px;left:0;right:0;z-index:100;background:var(--card);border:1.5px solid var(--B);border-radius:8px;box-shadow:0 14px 40px rgba(0,0,0,.5);max-height:190px;overflow-y:auto;animation:in .2s ease}
 .fr-drop-item{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--line);cursor:pointer}
 .fr-drop-item:last-child{border:0}
 .fr-drop-item:hover{background:color-mix(in srgb,var(--B) 12%,var(--card))}
 .fr-drop-info{display:flex;align-items:center;gap:10px}
-.fr-drop-av{font-size:18px}
 .fr-drop-name{font-weight:700;font-size:13px}
 .fr-drop-uid{font:500 9.5px var(--fm);color:var(--mu);display:block}
 
@@ -241,7 +241,7 @@ body.editing{overflow:hidden}
 .fr-name{font-weight:700;font-size:13.5px}
 .fr-btn{all:unset;box-sizing:border-box;padding:5px 12px;border-radius:4px;background:var(--B);color:#FEF3E2;font:700 11px var(--fm);cursor:pointer}
 
-/* ---------- 3. Mobile Game Inspired Settings Modal ---------- */
+/* ---------- 3. 15 HD Avatars & Settings System (Vivid & Crisp) ---------- */
 .st-box{max-height:86dvh}
 .st-tabs{display:flex;gap:6px;border-bottom:1.5px solid var(--line);padding-bottom:10px;margin-bottom:14px}
 .st-tab-btn{all:unset;box-sizing:border-box;flex:1;text-align:center;padding:10px 6px;border-radius:6px;font:700 13px var(--fb);color:var(--mu);cursor:pointer;transition:background-color .2s,color .2s}
@@ -249,12 +249,56 @@ body.editing{overflow:hidden}
 .st-panel{display:none;overflow-y:auto;max-height:60dvh;padding-right:2px}
 .st-panel.on{display:block}
 
-.avatar-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px}
-.avatar-opt{all:unset;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 4px;border-radius:10px;border:1.5px solid var(--line);background:var(--inp);cursor:pointer;transition:border-color .2s,transform .2s}
-.avatar-opt span{font-size:26px;line-height:1}
-.avatar-opt small{font:600 10px var(--fm);color:var(--mu);margin-top:4px;text-transform:uppercase}
+/* High-res non-pixelated avatar rendering with bright saturation */
+.av-img{
+  width:100%;
+  height:100%;
+  aspect-ratio:1;
+  object-fit:contain;
+  image-rendering:-webkit-optimize-contrast;
+  image-rendering:high-quality;
+  filter:contrast(1.08) saturate(1.18);
+  transition:transform .2s ease;
+  display:block;
+}
+.av-mini{
+  width:32px;
+  height:32px;
+  border-radius:50%;
+  object-fit:contain;
+  border:1.5px solid var(--B);
+  background:#2A1A0E;
+  filter:contrast(1.08) saturate(1.18);
+  flex:none;
+}
+.avatar-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(72px,1fr));
+  gap:8px;
+  margin-top:6px;
+  max-height:48dvh;
+  overflow-y:auto;
+  padding:4px;
+}
+.avatar-opt{
+  all:unset;
+  box-sizing:border-box;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:8px 4px;
+  border-radius:12px;
+  border:2px solid var(--line);
+  background:var(--inp);
+  cursor:pointer;
+  transition:border-color .2s,transform .2s,box-shadow .2s;
+}
+.avatar-opt .av-wrap{width:46px;height:46px;border-radius:50%;overflow:hidden;background:#2A1A0E;display:flex;align-items:center;justify-content:center}
+.avatar-opt small{font:600 9.5px var(--fm);color:var(--mu);margin-top:4px;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .avatar-opt:hover{border-color:var(--B);transform:translateY(-2px)}
-.avatar-opt.on{border-color:var(--B);background:color-mix(in srgb,var(--B) 14%,var(--inp));box-shadow:0 0 0 2px var(--B)}
+.avatar-opt.on{border-color:var(--B);background:color-mix(in srgb,var(--B) 14%,var(--inp));box-shadow:0 0 0 2px var(--B),0 4px 14px color-mix(in srgb,var(--B) 40%,transparent)}
+.avatar-opt.on .av-img{transform:scale(1.06)}
 
 /* ---------- 4. Special Abilities HUD Bar ---------- */
 .ab-bar{position:absolute;left:50%;bottom:calc(var(--peek) + 14px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:35;display:flex;gap:10px;background:color-mix(in srgb,var(--bg) 90%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);padding:6px 10px;border-radius:40px;border:1px solid var(--line);box-shadow:0 8px 30px rgba(0,0,0,.35)}
