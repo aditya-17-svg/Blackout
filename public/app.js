@@ -6,33 +6,50 @@ import { getPts, toLL, pip, offsetOf, randomArea, areaLabel, previewSvg, openAre
 const $ = (i) => document.getElementById(i);
 const MET = { run: 9.8, walk: 3.8, ride: 7.5 };
 
-// Official 24 Blackout High-Fidelity Avatars
+// Official 35 Blackout High-Fidelity Avatars (24 Standard Unlocked + 11 Exclusive Locked)
 export const AVATARS = [
-  { id: 'avatars/avatar_01.png', name: 'Blitz' },
-  { id: 'avatars/avatar_02.png', name: 'Kicks' },
-  { id: 'avatars/avatar_03.png', name: 'Brawler' },
-  { id: 'avatars/avatar_04.png', name: 'Cruiser' },
-  { id: 'avatars/avatar_05.png', name: 'Aero' },
-  { id: 'avatars/avatar_06.png', name: 'Chrono' },
-  { id: 'avatars/avatar_07.png', name: 'Iron' },
-  { id: 'avatars/avatar_08.png', name: 'Shark' },
-  { id: 'avatars/avatar_09.png', name: 'Gator' },
-  { id: 'avatars/avatar_10.png', name: 'Ape' },
-  { id: 'avatars/avatar_11.png', name: 'Stag' },
-  { id: 'avatars/avatar_12.png', name: 'Ram' },
-  { id: 'avatars/avatar_13.png', name: 'Fox' },
-  { id: 'avatars/avatar_14.png', name: 'Hare' },
-  { id: 'avatars/avatar_15.png', name: 'Bear' },
-  { id: 'avatars/avatar_16.png', name: 'Tigris' },
-  { id: 'avatars/avatar_17.png', name: 'Falcon' },
-  { id: 'avatars/avatar_18.png', name: 'Panther' },
-  { id: 'avatars/avatar_19.png', name: 'Bandit' },
-  { id: 'avatars/avatar_20.png', name: 'Taurus' },
-  { id: 'avatars/avatar_21.png', name: 'Nocturne' },
-  { id: 'avatars/avatar_22.png', name: 'Hooper' },
-  { id: 'avatars/avatar_23.png', name: 'Striker' },
-  { id: 'avatars/avatar_24.png', name: 'Ace' }
+  { id: 'avatars/avatar_01.png', name: 'Blitz', locked: false },
+  { id: 'avatars/avatar_02.png', name: 'Kicks', locked: false },
+  { id: 'avatars/avatar_03.png', name: 'Brawler', locked: false },
+  { id: 'avatars/avatar_04.png', name: 'Cruiser', locked: false },
+  { id: 'avatars/avatar_05.png', name: 'Aero', locked: false },
+  { id: 'avatars/avatar_06.png', name: 'Chrono', locked: false },
+  { id: 'avatars/avatar_07.png', name: 'Iron', locked: false },
+  { id: 'avatars/avatar_08.png', name: 'Shark', locked: false },
+  { id: 'avatars/avatar_09.png', name: 'Gator', locked: false },
+  { id: 'avatars/avatar_10.png', name: 'Ape', locked: false },
+  { id: 'avatars/avatar_11.png', name: 'Stag', locked: false },
+  { id: 'avatars/avatar_12.png', name: 'Ram', locked: false },
+  { id: 'avatars/avatar_13.png', name: 'Fox', locked: false },
+  { id: 'avatars/avatar_14.png', name: 'Hare', locked: false },
+  { id: 'avatars/avatar_15.png', name: 'Bear', locked: false },
+  { id: 'avatars/avatar_16.png', name: 'Tigris', locked: false },
+  { id: 'avatars/avatar_17.png', name: 'Falcon', locked: false },
+  { id: 'avatars/avatar_18.png', name: 'Panther', locked: false },
+  { id: 'avatars/avatar_19.png', name: 'Bandit', locked: false },
+  { id: 'avatars/avatar_20.png', name: 'Taurus', locked: false },
+  { id: 'avatars/avatar_21.png', name: 'Nocturne', locked: false },
+  { id: 'avatars/avatar_22.png', name: 'Hooper', locked: false },
+  { id: 'avatars/avatar_23.png', name: 'Striker', locked: false },
+  { id: 'avatars/avatar_24.png', name: 'Ace', locked: false },
+  // 11 Exclusive Locked Avatars (inaccessible to common users)
+  { id: 'avatars/avatar_25.png', name: 'Solaris', locked: true },
+  { id: 'avatars/avatar_26.png', name: 'Saber', locked: true },
+  { id: 'avatars/avatar_27.png', name: 'Drakon', locked: true },
+  { id: 'avatars/avatar_28.png', name: 'Monarch', locked: true },
+  { id: 'avatars/avatar_29.png', name: 'Kraken', locked: true },
+  { id: 'avatars/avatar_30.png', name: 'Shogun', locked: true },
+  { id: 'avatars/avatar_31.png', name: 'Viper', locked: true },
+  { id: 'avatars/avatar_32.png', name: 'Vanguard', locked: true },
+  { id: 'avatars/avatar_33.png', name: 'Valkyrie', locked: true },
+  { id: 'avatars/avatar_34.png', name: 'Imperium', locked: true },
+  { id: 'avatars/avatar_35.png', name: 'Supernova', locked: true }
 ];
+
+// Custom Vector Lock Emblem drawn in the exact same illustration style (#2A1A0E, #D4621A, #F4AE52, #FEF3E2)
+const LOCK_BADGE_SVG = `<svg viewBox="0 0 36 36" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="18" cy="18" r="16.5" fill="#2A1A0E" stroke="#F4AE52" stroke-width="2.2"/><circle cx="18" cy="18" r="13.5" fill="#D4621A" stroke="#2A1A0E" stroke-width="1.8"/><path d="M12.5 16.2V12C12.5 8.8 14.9 6.5 18 6.5C21.1 6.5 23.5 8.8 23.5 12V16.2" fill="none" stroke="#2A1A0E" stroke-width="5.2" stroke-linecap="round"/><path d="M12.5 16.2V12C12.5 8.8 14.9 6.5 18 6.5C21.1 6.5 23.5 8.8 23.5 12V16.2" fill="none" stroke="#FEF3E2" stroke-width="2.4" stroke-linecap="round"/><polygon points="9.5,15.5 26.5,15.5 28,26.5 18,29.8 8,26.5" fill="#F4AE52" stroke="#2A1A0E" stroke-width="2.3" stroke-linejoin="round"/><polygon points="18,15.5 26.5,15.5 28,26.5 18,29.8" fill="#D4621A" opacity="0.55"/><polygon points="9.5,15.5 26.5,15.5 28,26.5 18,29.8 8,26.5" fill="none" stroke="#2A1A0E" stroke-width="2.3" stroke-linejoin="round"/><circle cx="18" cy="20.6" r="2.2" fill="#2A1A0E"/><polygon points="16.7,21.2 19.3,21.2 19.9,25.8 16.1,25.8" fill="#2A1A0E"/></svg>`;
+
+export const isLockedAvatar = (id) => AVATARS.some((a) => a.id === id && a.locked);
 
 export function getAvatarFallback(name = 'Player') {
   const initial = ((name || 'P').trim()[0] || 'P').toUpperCase();
@@ -249,24 +266,41 @@ $('copyUidBtn').onclick = () => {
   toast('Player UID copied to clipboard!');
 };
 
-/* ---------- 2. Mobile Game Inspired Settings & 24 HD Avatars ---------- */
+/* ---------- 2. Mobile Game Inspired Settings & 35 HD Avatars ---------- */
 function initAvatarGrid() {
   const grid = $('avatarGrid'); grid.replaceChildren();
   AVATARS.forEach((av) => {
-    const btn = el('button', 'avatar-opt' + (myAvatar === av.id ? ' on' : ''));
+    const isLocked = !!av.locked;
+    const btn = el('button', 'avatar-opt' + (isLocked ? ' locked' : (myAvatar === av.id ? ' on' : '')));
     btn.type = 'button';
     btn.dataset.av = av.id;
+    if (isLocked) btn.title = av.name + ' (Exclusive Locked Avatar)';
 
+    const holder = el('div', 'av-holder');
     const wrap = el('div', 'av-wrap');
     const img = el('img', 'av-img');
     img.alt = av.name;
     bindAvatarImg(img, av.id, av.name);
     wrap.appendChild(img);
+    holder.appendChild(wrap);
+
+    if (isLocked) {
+      const lockBadge = el('span', 'av-lock-badge');
+      lockBadge.innerHTML = LOCK_BADGE_SVG;
+      holder.appendChild(lockBadge);
+    }
 
     const name = el('small', '', av.name);
-    btn.append(wrap, name);
+    btn.append(holder, name);
 
     btn.onclick = () => {
+      if (isLocked) {
+        btn.classList.remove('shake');
+        void btn.offsetWidth;
+        btn.classList.add('shake');
+        toast('Exclusive Crest — Locked for common users');
+        return;
+      }
       document.querySelectorAll('.avatar-opt').forEach((b) => b.classList.remove('on'));
       btn.classList.add('on');
       myAvatar = av.id;
@@ -480,7 +514,7 @@ sb.auth.onAuthStateChange((ev) => { if (ev === 'SIGNED_OUT') location.replace('a
 const { data: prof } = await sb.from('profiles').select('*').eq('id', uid).maybeSingle();
 myName = (prof && prof.display_name) || 'Player';
 const savedAv = (prof && prof.avatar) || localStorage.getItem('mf_avatar_' + uid);
-myAvatar = (savedAv && savedAv.startsWith('avatars/')) ? savedAv : 'avatars/avatar_01.png';
+myAvatar = (savedAv && savedAv.startsWith('avatars/') && !isLockedAvatar(savedAv)) ? savedAv : 'avatars/avatar_01.png';
 $('name').value = myName;
 $('sbName').textContent = myName;
 bindAvatarImg($('sbAvatarImg'), myAvatar, myName);
