@@ -6,7 +6,7 @@ import { getPts, toLL, pip, offsetOf, randomArea, areaLabel, previewSvg, openAre
 const $ = (i) => document.getElementById(i);
 const MET = { run: 9.8, walk: 3.8, ride: 7.5 };
 
-// Official 15 Blackout High-Fidelity Avatars
+// Official 24 Blackout High-Fidelity Avatars
 export const AVATARS = [
   { id: 'avatars/avatar_01.png', name: 'Blitz' },
   { id: 'avatars/avatar_02.png', name: 'Kicks' },
@@ -22,8 +22,41 @@ export const AVATARS = [
   { id: 'avatars/avatar_12.png', name: 'Ram' },
   { id: 'avatars/avatar_13.png', name: 'Fox' },
   { id: 'avatars/avatar_14.png', name: 'Hare' },
-  { id: 'avatars/avatar_15.png', name: 'Bear' }
+  { id: 'avatars/avatar_15.png', name: 'Bear' },
+  { id: 'avatars/avatar_16.png', name: 'Tigris' },
+  { id: 'avatars/avatar_17.png', name: 'Falcon' },
+  { id: 'avatars/avatar_18.png', name: 'Panther' },
+  { id: 'avatars/avatar_19.png', name: 'Bandit' },
+  { id: 'avatars/avatar_20.png', name: 'Taurus' },
+  { id: 'avatars/avatar_21.png', name: 'Nocturne' },
+  { id: 'avatars/avatar_22.png', name: 'Hooper' },
+  { id: 'avatars/avatar_23.png', name: 'Striker' },
+  { id: 'avatars/avatar_24.png', name: 'Ace' }
 ];
+
+export function getAvatarFallback(name = 'Player') {
+  const initial = ((name || 'P').trim()[0] || 'P').toUpperCase();
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%"><defs><linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#D4621A"/><stop offset="100%" stop-color="#F4AE52"/></linearGradient></defs><circle cx="50" cy="50" r="48" fill="#1A110B" stroke="#D4621A" stroke-width="3"/><circle cx="50" cy="50" r="38" fill="url(#bg)" opacity="0.2"/><polygon points="50,16 78,28 78,54 50,82 22,54 22,28" fill="none" stroke="#F4AE52" stroke-width="2.5" stroke-linejoin="round"/><text x="50" y="58" text-anchor="middle" font-family="'Anton',Impact,sans-serif" font-weight="900" font-size="32" fill="#FEF3E2" letter-spacing="1">${initial}</text></svg>`;
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+}
+
+export function bindAvatarImg(imgEl, avatarId, fallbackName = 'Player') {
+  if (!imgEl) return;
+  const id = (avatarId && avatarId.startsWith('avatars/')) ? avatarId : 'avatars/avatar_01.png';
+  if (typeof window !== 'undefined' && window.BLACKOUT_AVATAR_DATA && window.BLACKOUT_AVATAR_DATA[id]) {
+    imgEl.src = window.BLACKOUT_AVATAR_DATA[id];
+  } else {
+    imgEl.src = id;
+  }
+  imgEl.onerror = () => {
+    imgEl.onerror = null;
+    if (typeof window !== 'undefined' && window.BLACKOUT_AVATAR_DATA && window.BLACKOUT_AVATAR_DATA[id]) {
+      imgEl.src = window.BLACKOUT_AVATAR_DATA[id];
+    } else {
+      imgEl.src = getAvatarFallback(fallbackName);
+    }
+  };
+}
 
 let uid, myName = 'Player', myAvatar = 'avatars/avatar_01.png', gid, game, players = {}, tags = {}, mode = 'run', skew = 0, poll, chan;
 let started = false;
@@ -64,7 +97,7 @@ function renderFriendsUI() {
   pendingRequests.forEach((r) => {
     const it = el('div', 'fr-item');
     const info = el('div', 'fr-info');
-    const av = el('img', 'av-mini'); av.src = r.avatar || 'avatars/avatar_01.png';
+    const av = el('img', 'av-mini'); bindAvatarImg(av, r.avatar, r.name);
     info.append(av, el('span', 'fr-name', r.name));
     const btns = el('div', 'row');
     const acc = el('button', 'btn-sm', 'Accept'); acc.onclick = () => answerFriend(r, true);
@@ -79,7 +112,7 @@ function renderFriendsUI() {
   myFriends.forEach((f) => {
     const it = el('div', 'fr-item');
     const info = el('div', 'fr-info');
-    const av = el('img', 'av-mini'); av.src = f.avatar || 'avatars/avatar_01.png';
+    const av = el('img', 'av-mini'); bindAvatarImg(av, f.avatar, f.name);
     info.append(av, el('span', 'fr-name', f.name));
     it.appendChild(info);
     if (gid && game && game.status === 'lobby' && game.host === uid) {
@@ -122,7 +155,7 @@ async function searchPlayersDropdown(query) {
     playersFound.forEach((p) => {
       const it = el('div', 'fr-drop-item');
       const info = el('div', 'fr-drop-info');
-      const av = el('img', 'av-mini'); av.src = p.avatar || 'avatars/avatar_01.png';
+      const av = el('img', 'av-mini'); bindAvatarImg(av, p.avatar, p.display_name || 'Player');
       info.appendChild(av);
       const textWrap = el('div');
       textWrap.appendChild(el('span', 'fr-drop-name', p.display_name || 'Player'));
@@ -216,7 +249,7 @@ $('copyUidBtn').onclick = () => {
   toast('Player UID copied to clipboard!');
 };
 
-/* ---------- 2. Mobile Game Inspired Settings & 15 HD Avatars ---------- */
+/* ---------- 2. Mobile Game Inspired Settings & 24 HD Avatars ---------- */
 function initAvatarGrid() {
   const grid = $('avatarGrid'); grid.replaceChildren();
   AVATARS.forEach((av) => {
@@ -226,8 +259,8 @@ function initAvatarGrid() {
 
     const wrap = el('div', 'av-wrap');
     const img = el('img', 'av-img');
-    img.src = av.id;
     img.alt = av.name;
+    bindAvatarImg(img, av.id, av.name);
     wrap.appendChild(img);
 
     const name = el('small', '', av.name);
@@ -274,7 +307,7 @@ $('saveProfileBtn').onclick = async () => {
   const n = ($('stNameInput').value || myName).trim().slice(0, 14);
   if (n.length >= 2) myName = n;
   $('sbName').textContent = myName;
-  $('sbAvatarImg').src = myAvatar;
+  bindAvatarImg($('sbAvatarImg'), myAvatar, myName);
   $('name').value = myName;
   localStorage.setItem('mf_avatar_' + uid, myAvatar);
   try {
@@ -439,6 +472,7 @@ const myRole = () => players[uid] && players[uid].role;
 const amTagged = () => players[uid] && players[uid].status === 'tagged';
 const fail = (e, m) => { console.error(e); toast(m || 'Something went wrong. Try again.'); };
 
+bindAvatarImg($('sbAvatarImg'), myAvatar, myName);
 const { data: { session } } = await sb.auth.getSession();
 if (!session || !confirmed(session.user)) { location.replace('auth.html'); await new Promise(() => {}); }
 uid = session.user.id;
@@ -449,7 +483,7 @@ const savedAv = (prof && prof.avatar) || localStorage.getItem('mf_avatar_' + uid
 myAvatar = (savedAv && savedAv.startsWith('avatars/')) ? savedAv : 'avatars/avatar_01.png';
 $('name').value = myName;
 $('sbName').textContent = myName;
-$('sbAvatarImg').src = myAvatar;
+bindAvatarImg($('sbAvatarImg'), myAvatar, myName);
 $('myUidText').textContent = uid;
 homeCards(prof);
 loadFriends();
