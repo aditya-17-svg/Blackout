@@ -241,7 +241,7 @@ body.editing{overflow:hidden}
 .fr-name{font-weight:700;font-size:13.5px}
 .fr-btn{all:unset;box-sizing:border-box;padding:5px 12px;border-radius:4px;background:var(--B);color:#FEF3E2;font:700 11px var(--fm);cursor:pointer}
 
-/* ---------- 3. 15 HD Avatars & Settings System (Vivid & Crisp) ---------- */
+/* ---------- 3. 24 HD Avatars & Settings System (Vivid & Crisp) ---------- */
 .st-box{max-height:86dvh}
 .st-tabs{display:flex;gap:6px;border-bottom:1.5px solid var(--line);padding-bottom:10px;margin-bottom:14px}
 .st-tab-btn{all:unset;box-sizing:border-box;flex:1;text-align:center;padding:10px 6px;border-radius:6px;font:700 13px var(--fb);color:var(--mu);cursor:pointer;transition:background-color .2s,color .2s}
@@ -257,25 +257,25 @@ body.editing{overflow:hidden}
   object-fit:contain;
   image-rendering:-webkit-optimize-contrast;
   image-rendering:high-quality;
-  filter:contrast(1.08) saturate(1.18);
-  transition:transform .2s ease;
+  filter:contrast(1.08) saturate(1.22) drop-shadow(0 2px 5px rgba(0,0,0,.4));
+  transition:transform .2s ease,filter .2s ease;
   display:block;
 }
 .av-mini{
-  width:32px;
-  height:32px;
+  width:34px;
+  height:34px;
   border-radius:50%;
   object-fit:contain;
   border:1.5px solid var(--B);
-  background:#2A1A0E;
-  filter:contrast(1.08) saturate(1.18);
+  background:radial-gradient(circle at 35% 35%,#3d2314 0%,#170d07 100%);
+  filter:contrast(1.08) saturate(1.22);
   flex:none;
 }
 .avatar-grid{
   display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(72px,1fr));
-  gap:8px;
-  margin-top:6px;
+  grid-template-columns:repeat(auto-fill,minmax(74px,1fr));
+  gap:10px;
+  margin-top:8px;
   max-height:48dvh;
   overflow-y:auto;
   padding:4px;
@@ -287,18 +287,20 @@ body.editing{overflow:hidden}
   flex-direction:column;
   align-items:center;
   justify-content:center;
-  padding:8px 4px;
+  padding:8px 4px 6px;
   border-radius:12px;
   border:2px solid var(--line);
   background:var(--inp);
   cursor:pointer;
-  transition:border-color .2s,transform .2s,box-shadow .2s;
+  transition:border-color .2s,transform .2s,box-shadow .2s,background-color .2s;
 }
-.avatar-opt .av-wrap{width:46px;height:46px;border-radius:50%;overflow:hidden;background:#2A1A0E;display:flex;align-items:center;justify-content:center}
-.avatar-opt small{font:600 9.5px var(--fm);color:var(--mu);margin-top:4px;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.avatar-opt .av-wrap{width:50px;height:50px;border-radius:50%;overflow:hidden;background:radial-gradient(circle at 35% 35%,#3d2314 0%,#170d07 100%);border:1.5px solid color-mix(in srgb,var(--B) 45%,transparent);display:flex;align-items:center;justify-content:center}
+.avatar-opt small{font:700 9.5px var(--fm);color:var(--mu);margin-top:5px;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;letter-spacing:.03em}
 .avatar-opt:hover{border-color:var(--B);transform:translateY(-2px)}
-.avatar-opt.on{border-color:var(--B);background:color-mix(in srgb,var(--B) 14%,var(--inp));box-shadow:0 0 0 2px var(--B),0 4px 14px color-mix(in srgb,var(--B) 40%,transparent)}
-.avatar-opt.on .av-img{transform:scale(1.06)}
+.avatar-opt.on{border-color:var(--B);background:color-mix(in srgb,var(--B) 16%,var(--inp));box-shadow:0 0 0 2px var(--B),0 4px 16px color-mix(in srgb,var(--B) 45%,transparent)}
+.avatar-opt.on .av-wrap{border-color:var(--B);box-shadow:0 0 8px var(--B)}
+.avatar-opt.on .av-img{transform:scale(1.08)}
+.avatar-opt.on small{color:var(--B)}
 
 /* ---------- 4. Special Abilities HUD Bar ---------- */
 .ab-bar{position:absolute;left:50%;bottom:calc(var(--peek) + 14px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:35;display:flex;gap:10px;background:color-mix(in srgb,var(--bg) 90%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);padding:6px 10px;border-radius:40px;border:1px solid var(--line);box-shadow:0 8px 30px rgba(0,0,0,.35)}
