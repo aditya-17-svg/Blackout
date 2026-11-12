@@ -181,9 +181,10 @@ body.editing{overflow:hidden}
 .sp-desc{font:500 10px var(--fm);color:var(--mu);text-transform:uppercase;letter-spacing:.06em}
 
 /* ---------- 1. Left Sidebar Navigation & Thematic Icons ---------- */
-.t-icon{width:20px;height:20px;color:currentColor;display:inline-block;vertical-align:middle;flex:none}
-.t-badge-icon{width:36px;height:36px;border-radius:8px;background:color-mix(in srgb,var(--B) 18%,var(--card));display:flex;align-items:center;justify-content:center;color:var(--B);flex:none}
-.menu-btn{all:unset;box-sizing:border-box;width:40px;height:40px;border-radius:8px;border:1.5px solid var(--line);background:var(--card);color:var(--tx);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.t-icon{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;color:var(--ort);display:inline-block;vertical-align:middle;flex:none;transition:transform .2s,color .2s}
+.t-badge-icon{width:36px;height:36px;border-radius:8px;background:color-mix(in srgb,var(--B) 18%,var(--card));display:flex;align-items:center;justify-content:center;color:var(--ort);flex:none}
+.menu-btn{all:unset;box-sizing:border-box;width:40px;height:40px;border-radius:8px;border:1.5px solid var(--line);background:var(--card);color:var(--ort);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:border-color .2s}
+.menu-btn:hover,.hdr-btn:hover{border-color:var(--B);background:color-mix(in srgb,var(--B) 10%,var(--card))}
 .sb-overlay{position:fixed;inset:0;z-index:9100;background:rgba(21,11,5,.55);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);opacity:0;pointer-events:none;transition:opacity .35s}
 .sb-overlay.on{opacity:1;pointer-events:auto}
 .sidebar{position:fixed;top:0;left:0;bottom:0;width:min(320px,82vw);z-index:9200;background:var(--card);border-right:1px solid var(--line);box-shadow:10px 0 40px rgba(0,0,0,.35);padding:calc(18px + env(safe-area-inset-top)) 18px calc(24px + env(safe-area-inset-bottom));display:flex;flex-direction:column;transform:translateX(-100%);transition:transform .4s cubic-bezier(.16,1,.3,1)}
@@ -196,14 +197,17 @@ body.editing{overflow:hidden}
 .sb-x{all:unset;width:34px;height:34px;border-radius:50%;background:var(--inp);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;cursor:pointer;font-weight:700}
 .sb-nav{display:flex;flex-direction:column;gap:6px;flex:1}
 .sb-link{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:8px;font:600 14.5px var(--fb);color:var(--mu);cursor:pointer;transition:background-color .2s,color .2s}
+.sb-link .t-icon{color:var(--ort)}
 .sb-link:hover{background:color-mix(in srgb,var(--B) 10%,transparent);color:var(--tx)}
+.sb-link:hover .t-icon{color:var(--B);transform:scale(1.08)}
 .sb-link.on{background:color-mix(in srgb,var(--B) 16%,transparent);color:var(--B);font-weight:700}
+.sb-link.on .t-icon{color:var(--B)}
 .sb-badge{margin-left:auto;background:var(--B);color:#FEF3E2;font:700 10px var(--fm);padding:2px 7px;border-radius:99px}
 .sb-bot{border-top:1px solid var(--line);padding-top:14px;margin-top:auto}
-.sb-link.out{color:var(--bad)}
+.sb-link.out,.sb-link.out .t-icon{color:var(--bad)}
 
 /* ---------- 2. Friends System, UID Banner & Live Dropdown ---------- */
-.hdr-btn{all:unset;box-sizing:border-box;position:relative;width:40px;height:40px;border-radius:8px;border:1.5px solid var(--line);background:var(--card);color:var(--tx);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.hdr-btn{all:unset;box-sizing:border-box;position:relative;width:40px;height:40px;border-radius:8px;border:1.5px solid var(--line);background:var(--card);color:var(--ort);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:border-color .2s}
 .h-badge{position:absolute;top:-4px;right:-4px;width:10px;height:10px;border-radius:50%;background:var(--B);box-shadow:0 0 0 2px var(--card)}
 .inv-banner{position:fixed;top:calc(12px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:9700;width:min(440px,94vw);animation:down .35s ease}
 @keyframes down{from{transform:translate(-50%,-100%);opacity:0}}
@@ -241,7 +245,7 @@ body.editing{overflow:hidden}
 .fr-name{font-weight:700;font-size:13.5px}
 .fr-btn{all:unset;box-sizing:border-box;padding:5px 12px;border-radius:4px;background:var(--B);color:#FEF3E2;font:700 11px var(--fm);cursor:pointer}
 
-/* ---------- 3. 24 HD Avatars & Settings System (Vivid & Crisp) ---------- */
+/* ---------- 3. 35 HD Avatars (24 Unlocked + 11 Locked) & Settings System ---------- */
 .st-box{max-height:86dvh}
 .st-tabs{display:flex;gap:6px;border-bottom:1.5px solid var(--line);padding-bottom:10px;margin-bottom:14px}
 .st-tab-btn{all:unset;box-sizing:border-box;flex:1;text-align:center;padding:10px 6px;border-radius:6px;font:700 13px var(--fb);color:var(--mu);cursor:pointer;transition:background-color .2s,color .2s}
@@ -283,6 +287,7 @@ body.editing{overflow:hidden}
 .avatar-opt{
   all:unset;
   box-sizing:border-box;
+  position:relative;
   display:flex;
   flex-direction:column;
   align-items:center;
@@ -294,6 +299,7 @@ body.editing{overflow:hidden}
   cursor:pointer;
   transition:border-color .2s,transform .2s,box-shadow .2s,background-color .2s;
 }
+.avatar-opt .av-holder{position:relative;width:50px;height:50px;display:flex;align-items:center;justify-content:center}
 .avatar-opt .av-wrap{width:50px;height:50px;border-radius:50%;overflow:hidden;background:radial-gradient(circle at 35% 35%,#3d2314 0%,#170d07 100%);border:1.5px solid color-mix(in srgb,var(--B) 45%,transparent);display:flex;align-items:center;justify-content:center}
 .avatar-opt small{font:700 9.5px var(--fm);color:var(--mu);margin-top:5px;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;letter-spacing:.03em}
 .avatar-opt:hover{border-color:var(--B);transform:translateY(-2px)}
@@ -301,6 +307,41 @@ body.editing{overflow:hidden}
 .avatar-opt.on .av-wrap{border-color:var(--B);box-shadow:0 0 8px var(--B)}
 .avatar-opt.on .av-img{transform:scale(1.08)}
 .avatar-opt.on small{color:var(--B)}
+
+/* Locked Exclusive Avatar Styling & Vector Lock Crest */
+.avatar-opt.locked{
+  cursor:not-allowed;
+  background:color-mix(in srgb,var(--inp) 78%,#1a110b);
+  border-style:dashed;
+  border-color:color-mix(in srgb,var(--B) 42%,var(--line));
+}
+.avatar-opt.locked .av-img{
+  filter:contrast(1.04) saturate(.88) brightness(.78);
+}
+.avatar-opt.locked:hover{
+  border-color:var(--ort);
+  transform:none!important;
+  box-shadow:none!important;
+}
+.av-lock-badge{
+  position:absolute;
+  right:-4px;
+  bottom:-4px;
+  width:24px;
+  height:24px;
+  z-index:3;
+  pointer-events:none;
+  filter:drop-shadow(0 2px 4px rgba(0,0,0,.55));
+  transition:transform .2s cubic-bezier(.34,1.56,.64,1);
+}
+.avatar-opt.locked:hover .av-lock-badge{transform:scale(1.14)}
+.avatar-opt.shake{animation:lockShake .36s ease}
+@keyframes lockShake{
+  0%,100%{transform:translateX(0)}
+  25%{transform:translateX(-4px) rotate(-3deg)}
+  50%{transform:translateX(4px) rotate(3deg)}
+  75%{transform:translateX(-3px) rotate(-2deg)}
+}
 
 /* ---------- 4. Special Abilities HUD Bar ---------- */
 .ab-bar{position:absolute;left:50%;bottom:calc(var(--peek) + 14px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:35;display:flex;gap:10px;background:color-mix(in srgb,var(--bg) 90%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);padding:6px 10px;border-radius:40px;border:1px solid var(--line);box-shadow:0 8px 30px rgba(0,0,0,.35)}
