@@ -160,7 +160,7 @@ function renderFriendsUI() {
     info.append(av, el('span', 'fr-name', r.name));
     const btns = el('div', 'row');
     const acc = el('button', 'btn-sm', 'Accept'); acc.onclick = () => answerFriend(r, true);
-    const dec = el('button', 'btn-sm o', '✕'); dec.onclick = () => answerFriend(r, false);
+    const dec = el('button', 'btn-sm o', 'âœ•'); dec.onclick = () => answerFriend(r, false);
     btns.append(acc, dec);
     it.append(info, btns);
     reqList.appendChild(it);
@@ -174,7 +174,7 @@ function renderFriendsUI() {
     const av = el('img', 'av-mini'); bindAvatarImg(av, f.avatar, f.name);
     info.append(av, el('span', 'fr-name', f.name));
     it.appendChild(info);
-    if (gid && game && game.status === 'lobby' && (game.host === uid || isDevOrAdmin())) {
+    if (gid && game && game.status === 'lobby' && game.host === uid) {
       const inv = el('button', 'fr-btn', 'Invite to game');
       inv.onclick = () => sendGameInvite(f);
       it.appendChild(inv);
@@ -313,7 +313,7 @@ function initAvatarGrid() {
   const grid = $('avatarGrid'); grid.replaceChildren();
   const devMode = isDevOrAdmin();
   const lbl = $('avGridLabel');
-  if (lbl) lbl.textContent = devMode ? 'Select Agent Avatar (All 48 Crests Unlocked via Dev/Admin ID)' : 'Select Agent Avatar (24 Unlocked · 24 Exclusive Locked)';
+  if (lbl) lbl.textContent = devMode ? 'Select Agent Avatar (All 48 Crests Unlocked via Dev/Admin ID)' : 'Select Agent Avatar (24 Unlocked Â· 24 Exclusive Locked)';
 
   AVATARS.forEach((av) => {
     const isLocked = !!av.locked && !devMode;
@@ -349,7 +349,7 @@ function initAvatarGrid() {
         btn.classList.remove('shake');
         void btn.offsetWidth;
         btn.classList.add('shake');
-        toast('Exclusive Crest — Locked for common users');
+        toast('Exclusive Crest â€” Locked for common users');
         return;
       }
       document.querySelectorAll('.avatar-opt').forEach((b) => b.classList.remove('on'));
@@ -367,7 +367,7 @@ const openSettingsModal = () => {
   initAvatarGrid();
   if (isDevOrAdmin()) {
     $('stEmail').textContent = activeDevSession.code + ' (Dedicated Clearance ID)';
-    $('stProvider').textContent = 'Zero-PII Dev/Admin Gateway · User Private Data Redacted';
+    $('stProvider').textContent = 'Zero-PII Dev/Admin Gateway Â· User Private Data Redacted';
     $('stBadge').textContent = activeDevSession.role;
   } else if (session && session.user) {
     $('stEmail').textContent = session.user.email || 'Anonymous';
@@ -392,22 +392,26 @@ document.querySelectorAll('#settingsModal .st-tab-btn').forEach((btn) => {
   };
 });
 
-/* ---------- 2B. Dedicated Dev & Admin Separate ID Gateway & Console ---------- */
+/* ---------- 2B. Dev & Admin Command Center (Login on auth.html) ---------- */
 let devInfiniteAbilities = false, devTeleportMode = false;
 
 function syncDevBadgesUI() {
   const dev = isDevOrAdmin();
+  if ($('sbDevBtn')) $('sbDevBtn').hidden = !dev;
   if ($('sbDevBadge')) {
     $('sbDevBadge').hidden = !dev;
     if (dev) $('sbDevBadge').textContent = activeDevSession.role;
   }
-  if ($('hdrDevDot')) $('hdrDevDot').hidden = !dev;
   if ($('sbRole')) {
     $('sbRole').textContent = dev ? `${activeDevSession.title} (${activeDevSession.code})` : 'Agent Identity';
   }
 }
 
 function openDevModal() {
+  if (!isDevOrAdmin()) {
+    location.replace('auth.html?dev=1');
+    return;
+  }
   toggleSidebar(false);
   $('settingsModal').hidden = true;
   $('devModal').hidden = false;
@@ -416,35 +420,17 @@ function openDevModal() {
 
 function renderDevModalState() {
   const dev = isDevOrAdmin();
-  $('devGateView').hidden = dev;
-  $('devConsoleView').hidden = !dev;
-  $('devSubTitle').textContent = dev ? `${activeDevSession.title} · Zero-PII Mode` : 'Dedicated clearance ID gateway';
-  if (dev) {
-    $('devRoleLabel').textContent = `${activeDevSession.title} ACTIVE`;
-    $('devActiveIdText').textContent = `${activeDevSession.code} · UID: ${uid}`;
-    loadDevRooms();
-    loadDevPlayers();
-  }
+  if (!dev) return;
+  if ($('devConsoleView')) $('devConsoleView').hidden = false;
+  if ($('devSubTitle')) $('devSubTitle').textContent = `${activeDevSession.title} Â· Zero-PII Mode`;
+  if ($('devRoleLabel')) $('devRoleLabel').textContent = `${activeDevSession.title} ACTIVE`;
+  if ($('devActiveIdText')) $('devActiveIdText').textContent = `${activeDevSession.code} Â· UID: ${uid}`;
+  loadDevRooms();
+  loadDevPlayers();
 }
 
-if ($('hdrDev')) $('hdrDev').onclick = openDevModal;
 if ($('sbDevBtn')) $('sbDevBtn').onclick = openDevModal;
-if ($('quickDev')) $('quickDev').onclick = openDevModal;
-if ($('stOpenDevBtn')) $('stOpenDevBtn').onclick = openDevModal;
 if ($('devClose')) $('devClose').onclick = () => { $('devModal').hidden = true; };
-
-if ($('fillDevIdBtn')) {
-  $('fillDevIdBtn').onclick = () => {
-    $('devIdInput').value = 'BLK-DEV-01';
-    $('devKeyInput').value = 'BLACKOUT-2026';
-  };
-}
-if ($('fillAdminIdBtn')) {
-  $('fillAdminIdBtn').onclick = () => {
-    $('devIdInput').value = 'BLK-ADMIN-01';
-    $('devKeyInput').value = 'BLACKOUT-2026';
-  };
-}
 
 document.querySelectorAll('#devModal [data-dtab]').forEach((btn) => {
   btn.onclick = () => {
@@ -458,61 +444,13 @@ document.querySelectorAll('#devModal [data-dtab]').forEach((btn) => {
   };
 });
 
-if ($('devLoginBtn')) {
-  $('devLoginBtn').onclick = async () => {
-    const rawId = ($('devIdInput').value || '').trim().toUpperCase();
-    const rawKey = ($('devKeyInput').value || '').trim().toUpperCase();
-    const idAlias = (rawId === 'DEV' || rawId === 'DEV-01' || rawId === 'BLACKOUT-DEV') ? 'BLK-DEV-01'
-      : (rawId === 'ADMIN' || rawId === 'ADMIN-01' || rawId === 'BLACKOUT-ADMIN') ? 'BLK-ADMIN-01' : rawId;
-    const identity = DEV_IDENTITIES[idAlias];
-    if (!identity) return toast('Invalid Dev / Admin ID (Use BLK-DEV-01 or BLK-ADMIN-01)');
-    if (!identity.keys.includes(rawKey)) return toast('Invalid Clearance Passkey (Use BLACKOUT-2026)');
-
-    activeDevSession = identity;
-    localStorage.setItem('mf_dev_session', JSON.stringify({ code: identity.code, ts: Date.now() }));
-
-    if (!session || !session.user) {
-      uid = identity.uid;
-    }
-    if (!myName || myName === 'Player') myName = identity.defaultName;
-    myAvatar = localStorage.getItem('mf_avatar_' + uid) || identity.defaultAvatar;
-    $('name').value = myName;
-    $('sbName').textContent = myName;
-    bindAvatarImg($('sbAvatarImg'), myAvatar, myName);
-    $('myUidText').textContent = uid;
-
-    try {
-      await sb.from('profiles').upsert({ id: uid, display_name: myName, avatar: myAvatar });
-    } catch (e) {}
-
-    syncDevBadgesUI();
-    initAvatarGrid();
-    renderLobby();
-    if (started && $('hostBar')) $('hostBar').hidden = false;
-    renderDevModalState();
-    toast(`${identity.title} ACTIVATED! All game features & 48 avatars unlocked.`);
-  };
-}
-
 if ($('devLogoutBtn')) {
   $('devLogoutBtn').onclick = () => {
     activeDevSession = null;
     devInfiniteAbilities = false;
     devTeleportMode = false;
-    if ($('devInfAbChk')) $('devInfAbChk').checked = false;
-    if ($('devTeleportChk')) $('devTeleportChk').checked = false;
     localStorage.removeItem('mf_dev_session');
-    if (isLockedAvatar(myAvatar)) {
-      myAvatar = 'avatars/avatar_01.png';
-      bindAvatarImg($('sbAvatarImg'), myAvatar, myName);
-    }
-    syncDevBadgesUI();
-    initAvatarGrid();
-    renderLobby();
-    if (started && $('hostBar')) $('hostBar').hidden = !(game && game.host === uid);
-    renderDevModalState();
-    toast('Exited Dev / Admin ID clearance');
-    if (!session || !session.user) location.replace('auth.html');
+    sb.auth.signOut().finally(() => location.replace('auth.html'));
   };
 }
 
@@ -522,7 +460,7 @@ if ($('devForcePingBtn')) {
     if (!gid || !game) return toast('Join or create a game first');
     await releasePing();
     await loadPings();
-    toast('📡 DEV OVERRIDE: Global radar ping broadcasted!');
+    toast('ðŸ“¡ DEV OVERRIDE: Global radar ping broadcasted!');
   };
 }
 
@@ -543,7 +481,7 @@ if ($('devSwitchRoleBtn')) {
       initAbilitiesHUD();
     }
     await loadPlayers();
-    toast('🔄 DEV OVERRIDE: Role switched to ' + nextRole.toUpperCase());
+    toast('ðŸ”„ DEV OVERRIDE: Role switched to ' + nextRole.toUpperCase());
   };
 }
 
@@ -557,7 +495,7 @@ if ($('devUntagSelfBtn')) {
     } catch (e) {}
     await loadPlayers();
     await loadTags();
-    toast('🛡️ DEV OVERRIDE: Player revived & untagged!');
+    toast('ðŸ›¡ï¸ DEV OVERRIDE: Player revived & untagged!');
   };
 }
 
@@ -565,7 +503,7 @@ if ($('devResetCdBtn')) {
   $('devResetCdBtn').onclick = () => {
     Object.values(abilities).forEach((a) => { a.cd = 0; });
     updateAbilitiesUI();
-    toast('⚡ DEV OVERRIDE: All 4 ability cooldowns reset to 0s!');
+    toast('âš¡ DEV OVERRIDE: All 4 ability cooldowns reset to 0s!');
   };
 }
 
@@ -578,14 +516,14 @@ if ($('devSpawnRedBtn')) {
       const redCirc = L.circle([rz.lat, rz.lng], { radius: rz.radius, color: '#B3261E', weight: 3, fillColor: '#B3261E', fillOpacity: 0.24, interactive: false }).addTo(map);
       redLayers.push(redCirc);
     });
-    toast('☣️ DEV OVERRIDE: 3 Dynamic Red Hazard Zones spawned!');
+    toast('â˜£ï¸ DEV OVERRIDE: 3 Dynamic Red Hazard Zones spawned!');
   };
 }
 
 if ($('devClearRedBtn')) {
   $('devClearRedBtn').onclick = () => {
     redLayers.forEach((l) => l.remove()); redLayers = []; currentRedZones = [];
-    toast('🧹 DEV OVERRIDE: All Red Hazard Zones cleared!');
+    toast('ðŸ§¹ DEV OVERRIDE: All Red Hazard Zones cleared!');
   };
 }
 
@@ -622,8 +560,8 @@ async function loadDevRooms() {
       const it = el('div', 'fr-item');
       const info = el('div', 'fr-info');
       const meta = el('div');
-      meta.appendChild(el('b', 'fr-name', `Room ${g.code} · ${(g.status || 'lobby').toUpperCase()}`));
-      meta.appendChild(el('div', 'mu', `Round ${g.round || 1} · ID: ${String(g.id).slice(0, 8)}...`));
+      meta.appendChild(el('b', 'fr-name', `Room ${g.code} Â· ${(g.status || 'lobby').toUpperCase()}`));
+      meta.appendChild(el('div', 'mu', `Round ${g.round || 1} Â· ID: ${String(g.id).slice(0, 8)}...`));
       meta.lastChild.style.fontSize = '11px';
       info.appendChild(meta);
       const joinBtn = el('button', 'btn-sm', gid === g.id ? 'Current' : 'Join / Control');
@@ -684,7 +622,7 @@ async function loadDevPlayers() {
     privRow.style.alignItems = 'center';
     privRow.style.flexWrap = 'wrap';
     privRow.style.gap = '6px';
-    const redact = el('span', 'redacted-tag', '🔒 Email / Password / Auth / IP: [REDACTED · PRIVATE]');
+    const redact = el('span', 'redacted-tag', 'ðŸ”’ Email / Password / Auth / IP: [REDACTED Â· PRIVATE]');
     privRow.appendChild(redact);
 
     if (inCurrentMatch && gid) {
@@ -712,7 +650,7 @@ async function loadDevPlayers() {
   }
 
   try {
-    // Only public gameplay columns are queried — private user tables/columns are never accessed
+    // Only public gameplay columns are queried â€” private user tables/columns are never accessed
     const { data } = await sb.from('profiles').select('id,display_name,avatar,games_played,wins').limit(15);
     if (data && data.length) {
       const hdr = el('div', 'mono', 'PUBLIC AGENT PROFILES (ZERO-PII)');
@@ -782,10 +720,10 @@ $('sbAbilitiesBtn').onclick = () => {
     s.appendChild(el('h2', '', 'Special Abilities'));
     s.appendChild(el('p', '', 'Every match equips you with 4 tactical abilities:'));
     const list = [
-      ['👻 Ghost (Invisibility)', 'Freezes your ping & vanishes from seeker radar for 15s.'],
-      ['📍 Decoy Signal', 'Emits a false hider ping 100m away to mislead the seekers.'],
-      ['⚡ Sprint Boost', 'Surges running momentum and tactical pace for 12s.'],
-      ['📡 Jammer / Sonar', 'Hiders jam and delay the next ping; Seekers force an instant sonar reveal.']
+      ['ðŸ‘» Ghost (Invisibility)', 'Freezes your ping & vanishes from seeker radar for 15s.'],
+      ['ðŸ“ Decoy Signal', 'Emits a false hider ping 100m away to mislead the seekers.'],
+      ['âš¡ Sprint Boost', 'Surges running momentum and tactical pace for 12s.'],
+      ['ðŸ“¡ Jammer / Sonar', 'Hiders jam and delay the next ping; Seekers force an instant sonar reveal.']
     ];
     list.forEach(([t, d]) => { const c = el('div', 'card'); c.style.marginBottom = '8px'; c.appendChild(el('b', '', t)); c.appendChild(el('p', 'mu', d)); s.appendChild(c); });
     const cl = el('button', '', 'Close'); cl.onclick = closeSheet; s.appendChild(cl);
@@ -801,7 +739,7 @@ $('sbRulesBtn').onclick = () => {
 };
 $('sbOut').onclick = () => {
   localStorage.removeItem('mf_dev_session');
-  sb.auth.signOut().then(() => location.replace('auth.html'));
+  sb.auth.signOut().finally(() => location.replace('auth.html'));
 };
 
 /* ---------- 4. Special Abilities Engine ---------- */
@@ -815,7 +753,7 @@ const abilities = {
 function initAbilitiesHUD() {
   const role = myRole();
   $('abRadarName').textContent = role === 'seeker' ? 'Sonar' : 'Jammer';
-  $('abRadarIcon').textContent = role === 'seeker' ? '🔍' : '📡';
+  $('abRadarIcon').textContent = role === 'seeker' ? 'ðŸ”' : 'ðŸ“¡';
   document.querySelectorAll('.ab-btn').forEach((btn) => {
     const ab = btn.dataset.ab;
     btn.onclick = () => triggerAbility(ab);
@@ -831,7 +769,7 @@ function triggerAbility(key) {
   if (key === 'ghost') {
     if (role === 'seeker' && !dev) return toast('Ghost is only for hiders');
     a.active = true; a.cd = nextCd;
-    toast('👻 GHOST ACTIVE! Invisible for 15s');
+    toast('ðŸ‘» GHOST ACTIVE! Invisible for 15s');
     $('abGhost').classList.add('active');
     setTimeout(() => { a.active = false; $('abGhost').classList.remove('active'); toast('Ghost expired'); }, a.dur * 1000);
   } else if (key === 'decoy') {
@@ -842,25 +780,25 @@ function triggerAbility(key) {
       const mlngVal = 111320 * Math.cos((me.lat * Math.PI) / 180);
       const fakeLoc = { lat: me.lat + (Math.sin(ang) * 90) / 110540, lng: me.lng + (Math.cos(ang) * 90) / mlngVal };
       sb.from('pings').upsert({ game_id: gid, taken_at: new Date(nowMs()).toISOString(), hiders: [fakeLoc] }).then(() => {});
-      toast('📍 DECOY DEPLOYED! False ping broadcasted');
+      toast('ðŸ“ DECOY DEPLOYED! False ping broadcasted');
     }
   } else if (key === 'boost') {
     a.active = true; a.cd = nextCd;
-    toast('⚡ SPRINT BOOST ACTIVE! Pace surged');
+    toast('âš¡ SPRINT BOOST ACTIVE! Pace surged');
     $('abBoost').classList.add('active');
     setTimeout(() => { a.active = false; $('abBoost').classList.remove('active'); }, a.dur * 1000);
   } else if (key === 'radar') {
     a.cd = nextCd;
     if (role === 'seeker' || dev) {
       releasePing();
-      toast('🔍 SONAR PULSE: Immediate hider scan triggered!');
+      toast('ðŸ” SONAR PULSE: Immediate hider scan triggered!');
     } else {
       if (game && game.next_ping_at) {
         const delayed = new Date(Date.parse(game.next_ping_at) + 20000).toISOString();
         sb.from('games').update({ next_ping_at: delayed }).eq('id', gid).then(() => {});
         game.next_ping_at = delayed;
       }
-      toast('📡 RADAR JAMMED! Next seeker ping delayed by 20s');
+      toast('ðŸ“¡ RADAR JAMMED! Next seeker ping delayed by 20s');
     }
   }
   updateAbilitiesUI();
@@ -905,16 +843,11 @@ const fail = (e, m) => { console.error(e); toast(m || 'Something went wrong. Try
 
 bindAvatarImg($('sbAvatarImg'), myAvatar, myName);
 const { data: { session } } = await sb.auth.getSession();
-const wantsDevGate = new URLSearchParams(location.search).get('dev') === '1';
 if ((!session || !confirmed(session.user)) && !isDevOrAdmin()) {
-  if (wantsDevGate) {
-    openDevModal();
-  } else {
-    location.replace('auth.html');
-    await new Promise(() => {});
-  }
+  location.replace('auth.html');
+  await new Promise(() => {});
 }
-uid = (session && session.user) ? session.user.id : (activeDevSession ? activeDevSession.uid : '00000000-0000-4000-d000-000000000001');
+uid = (session && session.user && !isDevOrAdmin()) ? session.user.id : (activeDevSession ? activeDevSession.uid : '00000000-0000-4000-d000-000000000001');
 sb.auth.onAuthStateChange((ev) => { if (ev === 'SIGNED_OUT' && !isDevOrAdmin()) location.replace('auth.html'); });
 const { data: prof } = await sb.from('profiles').select('id,display_name,avatar,games_played,wins,distance_m,calories').eq('id', uid).maybeSingle();
 myName = (prof && prof.display_name) || (activeDevSession ? activeDevSession.defaultName : 'Player');
@@ -940,7 +873,7 @@ async function homeCards(p) {
   }
 }
 
-if ($('so')) $('so').onclick = () => sb.auth.signOut().then(() => location.replace('auth.html'));
+if ($('so')) $('so').onclick = () => { localStorage.removeItem('mf_dev_session'); sb.auth.signOut().finally(() => location.replace('auth.html')); };
 const qc = new URLSearchParams(location.search).get('code');
 if (qc) $('code').value = qc.slice(0, 6).toUpperCase();
 $('sheet').onclick = (e) => { if (e.target === $('sheet') && !$('sheet').dataset.lock) closeSheet(); };
@@ -1183,7 +1116,7 @@ function buildMap() {
     const row = { game_id: gid, user_id: uid, lat: me.lat, lng: me.lng, updated_at: new Date().toISOString() };
     sb.from('locations').upsert(row).then(() => {});
     if (role === 'seeker') sb.from('live_positions').upsert(row).then(() => {});
-    toast(`📍 Dev Teleported to ${me.lat.toFixed(4)}, ${me.lng.toFixed(4)}`);
+    toast(`ðŸ“ Dev Teleported to ${me.lat.toFixed(4)}, ${me.lng.toFixed(4)}`);
   });
   drawZone(true);
 }
@@ -1273,7 +1206,7 @@ function tick() {
   tickAbilities();
 
   const w = hiders().length && freeHiders().length === 0 ? 'seekers' : t >= end ? 'hiders' : null;
-  if (w) { if (isHostOrDev() && game.status !== 'over') sb.rpc('finish_game', { g: gid, w }).then(() => {}); return finish(w); }
+  if (w) { if (game.host === uid && game.status !== 'over') sb.rpc('finish_game', { g: gid, w }).then(() => {}); return finish(w); }
   const kc = Math.round((MET[mode] * 70 * t) / 3600);
   $('tm').textContent = mmss(t); $('kc').textContent = kc; $('ds').textContent = Math.round(dist); $('clock').textContent = mmss(end - t);
   const out = me && map && !insideZone(rad);
@@ -1286,7 +1219,7 @@ function tick() {
 
   let banner = '';
   if (isPaused()) banner = 'Game paused.';
-  else if (inRed) banner = '⚠️ DANGER: YOU ARE IN A RED ZONE! Location exposed!';
+  else if (inRed) banner = 'âš ï¸ DANGER: YOU ARE IN A RED ZONE! Location exposed!';
   else if (t < hs) banner = role === 'seeker' ? 'Hold still: hiders are hiding. ' + mmss(hs - t) : 'Head start: go hide! ' + mmss(hs - t);
   else if (amTagged()) banner = 'You are tagged. Spectating.';
   else if (out) banner = role === 'hider' ? 'Outside zone! Back in ' + Math.max(0, 120 - outT) + ' s' : 'Outside safe zone';
@@ -1298,20 +1231,20 @@ function tick() {
   if (t >= hs && r.pingSec > 0 && !isPaused()) {
     const isDue = np ? nowMs() >= np : (t >= hs && !lastPing);
     if (isDue) {
-      const isHost = isHostOrDev();
+      const isHost = game.host === uid;
       const isFallback = !isHost && np && (nowMs() - np > 2000);
       if (isHost || isFallback) releasePing();
     }
   }
 
-  if ((role === 'seeker' || isDevOrAdmin()) && t >= hs && next <= 1 && Date.now() - lastPingFetch > 1000) {
+  if (role === 'seeker' && t >= hs && next <= 1 && Date.now() - lastPingFetch > 1000) {
     lastPingFetch = Date.now();
     loadPings();
   }
 
   const free = freeHiders().length;
-  if (role === 'seeker') $('info').innerHTML = (np ? '<span class="yl">NEXT PING</span> in ' + mmss(Math.max(next, t < hs ? hs - t : 0)) : '<span class="yl">PINGS OFF</span>') + ' · hiders left ' + free;
-  else $('info').innerHTML = '<span class="or">SEEKER LIVE</span> · hiders left ' + free;
+  if (role === 'seeker') $('info').innerHTML = (np ? '<span class="yl">NEXT PING</span> in ' + mmss(Math.max(next, t < hs ? hs - t : 0)) : '<span class="yl">PINGS OFF</span>') + ' Â· hiders left ' + free;
+  else $('info').innerHTML = '<span class="or">SEEKER LIVE</span> Â· hiders left ' + free;
   $('tagBtn').disabled = t < hs || isPaused();
 
   if (pts) pts.fade();
