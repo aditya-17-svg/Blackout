@@ -107,8 +107,8 @@
     <button class="sb-link" id="sbRulesBtn" type="button">
       <svg class="t-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>Rules &amp; Dynamic Zones
     </button>
-    <button class="sb-link dev-link" id="sbDevBtn" type="button">
-      <svg class="t-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>Dev &amp; Admin ID <span class="sb-badge dev-pill" id="sbDevBadge" hidden>ON</span>
+    <button class="sb-link dev-link" id="sbDevBtn" type="button" hidden>
+      <svg class="t-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>Dev Command Center <span class="sb-badge dev-pill" id="sbDevBadge" hidden>ON</span>
     </button>
   </nav>
   <div class="sb-bot">
@@ -204,15 +204,10 @@
           <span class="chip a" id="stBadge">LINKED</span>
         </div>
       </div>
-      <div class="card" style="margin-bottom:12px">
+      <div class="card">
         <p class="mono">UPDATE PASSWORD</p>
         <input id="stNewPw" type="password" placeholder="New strong password" style="margin-bottom:8px">
         <button id="stUpdatePwBtn" class="btn o" type="button" style="height:42px;font-size:13.5px">Change Password</button>
-      </div>
-      <div class="card">
-        <p class="mono">DEV &amp; ADMIN CLEARANCE</p>
-        <p class="mu" style="font-size:12px;margin:2px 0 10px">Have a Developer or Admin ID? Enter through the dedicated clearance portal to unlock all 48 crests and match controls.</p>
-        <button id="stOpenDevBtn" class="btn o" type="button" style="height:40px;font-size:13px">Open Dev / Admin ID Portal</button>
       </div>
     </div>
 
@@ -244,7 +239,7 @@
   </div>
 </div>
 
-<!-- Dedicated Dev & Admin Separate ID Entry & Command Center Modal -->
+<!-- Dev & Admin Command Center Modal (Only accessible when logged in via auth.html Dev/Admin Portal) -->
 <div id="devModal" class="sp-modal" hidden>
   <div class="sp-box dev-box">
     <div class="sp-head">
@@ -255,36 +250,12 @@
             <polyline points="9 12 11 14 15 10"/>
           </svg>
         </div>
-        <div><h2>Dev &amp; Admin Portal</h2><p id="devSubTitle">Dedicated clearance ID gateway</p></div>
+        <div><h2>Dev Command Center</h2><p id="devSubTitle">Zero-PII Clearance Mode</p></div>
       </div>
       <button class="sp-close" id="devClose" type="button">✕</button>
     </div>
 
-    <!-- VIEW A: Separate Dev / Admin ID Login Gate -->
-    <div id="devGateView">
-      <div class="dev-privacy-banner">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-        <div><b>Zero-PII Privacy Architecture:</b> Dev &amp; Admin IDs unlock 100% of in-game features (all 48 avatars, host overrides, radar &amp; zone controls, abilities) while strictly blocking access to private user emails, passwords, and personal data.</div>
-      </div>
-
-      <label class="fl" style="margin-top:12px">Dedicated Dev or Admin ID
-        <input id="devIdInput" type="text" placeholder="e.g. BLK-DEV-01 or BLK-ADMIN-01" autocomplete="off" autocapitalize="characters">
-      </label>
-      <label class="fl" style="margin-top:10px">Clearance Passkey
-        <input id="devKeyInput" type="password" placeholder="Enter clearance key (BLACKOUT-2026)" autocomplete="off">
-      </label>
-
-      <div class="dev-preset-row">
-        <span class="mono" style="font-size:10px">AUTHORIZED IDS:</span>
-        <button type="button" class="chip" id="fillDevIdBtn">Dev ID: BLK-DEV-01</button>
-        <button type="button" class="chip" id="fillAdminIdBtn">Admin ID: BLK-ADMIN-01</button>
-      </div>
-
-      <button id="devLoginBtn" class="btn" type="button" style="margin-top:12px">Enter with Dev / Admin ID</button>
-    </div>
-
-    <!-- VIEW B: Active Dev / Admin Command Center -->
-    <div id="devConsoleView" hidden>
+    <div id="devConsoleView">
       <div class="my-uid-box dev-status-bar">
         <div class="uid-meta">
           <span id="devRoleLabel">DEVELOPER CLEARANCE ACTIVE</span>
@@ -362,22 +333,14 @@
     <a class="logo" href="index.html"><svg width="36" height="36" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="15" fill="#2A1A0E"/><path fill-rule="evenodd" fill="#F4AE52" transform="translate(-1 8) scale(.78)" d="M11 14H27C34 14 38 18 38 23.5C38 28 35.5 30.5 32 31.5C36.5 32.5 40 35.5 40 41C40 47 35.5 50 28 50H11ZM19 20.5V27.5H26C29.5 27.5 31 26 31 24C31 22 29.5 20.5 26 20.5ZM19 34.5V43.5H27C31 43.5 32.5 42 32.5 39C32.5 36 31 34.5 27 34.5Z"/><circle cx="45.5" cy="33" r="10" fill="none" stroke="#D4621A" stroke-width="7"/></svg>BLACKOUT</a>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
-    <!-- Dev & Admin Clearance Portal Icon -->
-    <button id="hdrDev" class="hdr-btn" type="button" aria-label="Dev & Admin Portal" title="Dev & Admin ID Portal">
-      <svg class="t-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-        <polyline points="9 12 11 14 15 10"/>
-      </svg>
-      <span id="hdrDevDot" class="h-badge dev-dot" hidden>✓</span>
-    </button>
-    <!-- Clean Theme Settings Icon -->
+    <!-- Clean Theme Settings Icon (matches photo 3) -->
     <button id="hdrSettings" class="hdr-btn" type="button" aria-label="Settings">
       <svg class="t-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="3"/>
         <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
       </svg>
     </button>
-    <!-- Clean Theme Manage Friends Icon -->
+    <!-- Clean Theme Manage Friends Icon (matches photo 2) -->
     <button id="hdrFriends" class="hdr-btn" type="button" aria-label="Friends">
       <svg class="t-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
@@ -399,12 +362,9 @@
     <button id="create" type="button">Create new game</button>
     <div class="or2">or join a game</div>
     <div class="jr"><input id="code" type="text" placeholder="JOIN CODE" maxlength="6" autocapitalize="characters" autocomplete="off"><button class="o" id="join" type="button">Join</button></div>
-    <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-top:14px">
+    <div style="display:flex;justify-content:space-between;margin-top:14px">
       <button class="lnk" id="quickFriends" type="button">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" style="vertical-align:-2px;margin-right:4px"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2"/><circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2"/></svg>Manage Friends
-      </button>
-      <button class="lnk" id="quickDev" type="button">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" style="vertical-align:-2px;margin-right:4px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="2"/><polyline points="9 12 11 14 15 10" stroke="currentColor" stroke-width="2"/></svg>Dev / Admin ID
       </button>
       <button class="lnk" id="quickSettings" type="button">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" style="vertical-align:-2px;margin-right:4px"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" stroke-width="1.8"/></svg>Settings
