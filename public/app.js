@@ -6,7 +6,7 @@ import { getPts, toLL, pip, offsetOf, randomArea, areaLabel, previewSvg, openAre
 const $ = (i) => document.getElementById(i);
 const MET = { run: 9.8, walk: 3.8, ride: 7.5 };
 
-// Official 35 Blackout High-Fidelity Avatars (24 Standard Unlocked + 11 Exclusive Locked)
+// Official 48 Blackout High-Fidelity Avatars (24 Standard Unlocked + 24 Exclusive Locked)
 export const AVATARS = [
   { id: 'avatars/avatar_01.png', name: 'Blitz', locked: false },
   { id: 'avatars/avatar_02.png', name: 'Kicks', locked: false },
@@ -32,7 +32,7 @@ export const AVATARS = [
   { id: 'avatars/avatar_22.png', name: 'Hooper', locked: false },
   { id: 'avatars/avatar_23.png', name: 'Striker', locked: false },
   { id: 'avatars/avatar_24.png', name: 'Ace', locked: false },
-  // 11 Exclusive Locked Avatars (inaccessible to common users)
+  // 24 Exclusive Locked Avatars (inaccessible to common users)
   { id: 'avatars/avatar_25.png', name: 'Solaris', locked: true },
   { id: 'avatars/avatar_26.png', name: 'Saber', locked: true },
   { id: 'avatars/avatar_27.png', name: 'Drakon', locked: true },
@@ -43,7 +43,20 @@ export const AVATARS = [
   { id: 'avatars/avatar_32.png', name: 'Vanguard', locked: true },
   { id: 'avatars/avatar_33.png', name: 'Valkyrie', locked: true },
   { id: 'avatars/avatar_34.png', name: 'Imperium', locked: true },
-  { id: 'avatars/avatar_35.png', name: 'Supernova', locked: true }
+  { id: 'avatars/avatar_35.png', name: 'Supernova', locked: true },
+  { id: 'avatars/avatar_36.png', name: 'Ronin', locked: true },
+  { id: 'avatars/avatar_37.png', name: 'Wingfoot', locked: true },
+  { id: 'avatars/avatar_38.png', name: 'Titan', locked: true },
+  { id: 'avatars/avatar_39.png', name: 'Thruster', locked: true },
+  { id: 'avatars/avatar_40.png', name: 'Forge', locked: true },
+  { id: 'avatars/avatar_41.png', name: 'Overclock', locked: true },
+  { id: 'avatars/avatar_42.png', name: 'Golem', locked: true },
+  { id: 'avatars/avatar_43.png', name: 'Champion', locked: true },
+  { id: 'avatars/avatar_44.png', name: 'Eclipse', locked: true },
+  { id: 'avatars/avatar_45.png', name: 'Bighorn', locked: true },
+  { id: 'avatars/avatar_46.png', name: 'Buzzer', locked: true },
+  { id: 'avatars/avatar_47.png', name: 'Zephyr', locked: true },
+  { id: 'avatars/avatar_48.png', name: 'Wyvern', locked: true }
 ];
 
 // Custom Vector Lock Emblem drawn in the exact same illustration style (#2A1A0E, #D4621A, #F4AE52, #FEF3E2)
