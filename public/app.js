@@ -62,7 +62,36 @@ export const AVATARS = [
 // Custom Vector Lock Emblem drawn in the exact same illustration style (#2A1A0E, #D4621A, #F4AE52, #FEF3E2)
 const LOCK_BADGE_SVG = `<svg viewBox="0 0 36 36" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="18" cy="18" r="16.5" fill="#2A1A0E" stroke="#F4AE52" stroke-width="2.2"/><circle cx="18" cy="18" r="13.5" fill="#D4621A" stroke="#2A1A0E" stroke-width="1.8"/><path d="M12.5 16.2V12C12.5 8.8 14.9 6.5 18 6.5C21.1 6.5 23.5 8.8 23.5 12V16.2" fill="none" stroke="#2A1A0E" stroke-width="5.2" stroke-linecap="round"/><path d="M12.5 16.2V12C12.5 8.8 14.9 6.5 18 6.5C21.1 6.5 23.5 8.8 23.5 12V16.2" fill="none" stroke="#FEF3E2" stroke-width="2.4" stroke-linecap="round"/><polygon points="9.5,15.5 26.5,15.5 28,26.5 18,29.8 8,26.5" fill="#F4AE52" stroke="#2A1A0E" stroke-width="2.3" stroke-linejoin="round"/><polygon points="18,15.5 26.5,15.5 28,26.5 18,29.8" fill="#D4621A" opacity="0.55"/><polygon points="9.5,15.5 26.5,15.5 28,26.5 18,29.8 8,26.5" fill="none" stroke="#2A1A0E" stroke-width="2.3" stroke-linejoin="round"/><circle cx="18" cy="20.6" r="2.2" fill="#2A1A0E"/><polygon points="16.7,21.2 19.3,21.2 19.9,25.8 16.1,25.8" fill="#2A1A0E"/></svg>`;
 
-export const isLockedAvatar = (id) => AVATARS.some((a) => a.id === id && a.locked);
+// Dedicated Dev & Admin Separate Access IDs (Zero-PII Architecture)
+export const DEV_IDENTITIES = {
+  'BLK-DEV-01': {
+    code: 'BLK-DEV-01',
+    role: 'DEV',
+    title: 'DEVELOPER CLEARANCE',
+    uid: '00000000-0000-4000-d000-000000000001',
+    defaultName: 'Dev_Lead',
+    defaultAvatar: 'avatars/avatar_36.png',
+    keys: ['BLACKOUT-2026', 'BLK-DEV-2026', 'DEV-2026', 'BLACKOUT']
+  },
+  'BLK-ADMIN-01': {
+    code: 'BLK-ADMIN-01',
+    role: 'ADMIN',
+    title: 'ADMIN CLEARANCE',
+    uid: '00000000-0000-4000-a000-000000000001',
+    defaultName: 'Admin_HQ',
+    defaultAvatar: 'avatars/avatar_48.png',
+    keys: ['BLACKOUT-2026', 'BLK-ADMIN-2026', 'ADMIN-2026', 'BLACKOUT']
+  }
+};
+
+let activeDevSession = null;
+try {
+  const savedDev = JSON.parse(localStorage.getItem('mf_dev_session') || 'null');
+  if (savedDev && DEV_IDENTITIES[savedDev.code]) activeDevSession = DEV_IDENTITIES[savedDev.code];
+} catch (e) {}
+
+export const isDevOrAdmin = () => !!activeDevSession;
+export const isLockedAvatar = (id) => !isDevOrAdmin() && AVATARS.some((a) => a.id === id && a.locked);
 
 export function getAvatarFallback(name = 'Player') {
   const initial = ((name || 'P').trim()[0] || 'P').toUpperCase();
@@ -145,7 +174,7 @@ function renderFriendsUI() {
     const av = el('img', 'av-mini'); bindAvatarImg(av, f.avatar, f.name);
     info.append(av, el('span', 'fr-name', f.name));
     it.appendChild(info);
-    if (gid && game && game.status === 'lobby' && game.host === uid) {
+    if (gid && game && game.status === 'lobby' && (game.host === uid || isDevOrAdmin())) {
       const inv = el('button', 'fr-btn', 'Invite to game');
       inv.onclick = () => sendGameInvite(f);
       it.appendChild(inv);
@@ -279,15 +308,21 @@ $('copyUidBtn').onclick = () => {
   toast('Player UID copied to clipboard!');
 };
 
-/* ---------- 2. Mobile Game Inspired Settings & 35 HD Avatars ---------- */
+/* ---------- 2. Mobile Game Inspired Settings & 48 HD Avatars ---------- */
 function initAvatarGrid() {
   const grid = $('avatarGrid'); grid.replaceChildren();
+  const devMode = isDevOrAdmin();
+  const lbl = $('avGridLabel');
+  if (lbl) lbl.textContent = devMode ? 'Select Agent Avatar (All 48 Crests Unlocked via Dev/Admin ID)' : 'Select Agent Avatar (24 Unlocked · 24 Exclusive Locked)';
+
   AVATARS.forEach((av) => {
-    const isLocked = !!av.locked;
-    const btn = el('button', 'avatar-opt' + (isLocked ? ' locked' : (myAvatar === av.id ? ' on' : '')));
+    const isLocked = !!av.locked && !devMode;
+    const isDevUnlocked = !!av.locked && devMode;
+    const btn = el('button', 'avatar-opt' + (isLocked ? ' locked' : (isDevUnlocked ? ' dev-unlocked' : '')) + (myAvatar === av.id ? ' on' : ''));
     btn.type = 'button';
     btn.dataset.av = av.id;
     if (isLocked) btn.title = av.name + ' (Exclusive Locked Avatar)';
+    else if (isDevUnlocked) btn.title = av.name + ' (Unlocked via Dev/Admin Clearance)';
 
     const holder = el('div', 'av-holder');
     const wrap = el('div', 'av-wrap');
@@ -301,6 +336,9 @@ function initAvatarGrid() {
       const lockBadge = el('span', 'av-lock-badge');
       lockBadge.innerHTML = LOCK_BADGE_SVG;
       holder.appendChild(lockBadge);
+    } else if (isDevUnlocked) {
+      const devBadge = el('span', 'av-dev-badge', activeDevSession ? activeDevSession.role : 'DEV');
+      holder.appendChild(devBadge);
     }
 
     const name = el('small', '', av.name);
@@ -327,9 +365,14 @@ const openSettingsModal = () => {
   $('settingsModal').hidden = false;
   $('stNameInput').value = myName;
   initAvatarGrid();
-  if (session && session.user) {
+  if (isDevOrAdmin()) {
+    $('stEmail').textContent = activeDevSession.code + ' (Dedicated Clearance ID)';
+    $('stProvider').textContent = 'Zero-PII Dev/Admin Gateway · User Private Data Redacted';
+    $('stBadge').textContent = activeDevSession.role;
+  } else if (session && session.user) {
     $('stEmail').textContent = session.user.email || 'Anonymous';
     $('stProvider').textContent = session.user.app_metadata.provider ? 'Signed in via ' + session.user.app_metadata.provider.toUpperCase() : 'Email Password';
+    $('stBadge').textContent = 'LINKED';
   }
 };
 
@@ -339,15 +382,350 @@ $('sbSettingsBtn').onclick = openSettingsModal;
 $('sbProfClick').onclick = openSettingsModal;
 $('stClose').onclick = () => { $('settingsModal').hidden = true; };
 
-document.querySelectorAll('.st-tab-btn').forEach((btn) => {
+document.querySelectorAll('#settingsModal .st-tab-btn').forEach((btn) => {
   btn.onclick = () => {
-    document.querySelectorAll('.st-tab-btn').forEach((b) => b.classList.remove('on'));
-    document.querySelectorAll('.st-panel').forEach((p) => p.classList.remove('on'));
+    document.querySelectorAll('#settingsModal .st-tab-btn').forEach((b) => b.classList.remove('on'));
+    document.querySelectorAll('#settingsModal .st-panel').forEach((p) => p.classList.remove('on'));
     btn.classList.add('on');
     const target = $('stab-' + btn.dataset.stab);
     if (target) target.classList.add('on');
   };
 });
+
+/* ---------- 2B. Dedicated Dev & Admin Separate ID Gateway & Console ---------- */
+let devInfiniteAbilities = false, devTeleportMode = false;
+
+function syncDevBadgesUI() {
+  const dev = isDevOrAdmin();
+  if ($('sbDevBadge')) {
+    $('sbDevBadge').hidden = !dev;
+    if (dev) $('sbDevBadge').textContent = activeDevSession.role;
+  }
+  if ($('hdrDevDot')) $('hdrDevDot').hidden = !dev;
+  if ($('sbRole')) {
+    $('sbRole').textContent = dev ? `${activeDevSession.title} (${activeDevSession.code})` : 'Agent Identity';
+  }
+}
+
+function openDevModal() {
+  toggleSidebar(false);
+  $('settingsModal').hidden = true;
+  $('devModal').hidden = false;
+  renderDevModalState();
+}
+
+function renderDevModalState() {
+  const dev = isDevOrAdmin();
+  $('devGateView').hidden = dev;
+  $('devConsoleView').hidden = !dev;
+  $('devSubTitle').textContent = dev ? `${activeDevSession.title} · Zero-PII Mode` : 'Dedicated clearance ID gateway';
+  if (dev) {
+    $('devRoleLabel').textContent = `${activeDevSession.title} ACTIVE`;
+    $('devActiveIdText').textContent = `${activeDevSession.code} · UID: ${uid}`;
+    loadDevRooms();
+    loadDevPlayers();
+  }
+}
+
+if ($('hdrDev')) $('hdrDev').onclick = openDevModal;
+if ($('sbDevBtn')) $('sbDevBtn').onclick = openDevModal;
+if ($('quickDev')) $('quickDev').onclick = openDevModal;
+if ($('stOpenDevBtn')) $('stOpenDevBtn').onclick = openDevModal;
+if ($('devClose')) $('devClose').onclick = () => { $('devModal').hidden = true; };
+
+if ($('fillDevIdBtn')) {
+  $('fillDevIdBtn').onclick = () => {
+    $('devIdInput').value = 'BLK-DEV-01';
+    $('devKeyInput').value = 'BLACKOUT-2026';
+  };
+}
+if ($('fillAdminIdBtn')) {
+  $('fillAdminIdBtn').onclick = () => {
+    $('devIdInput').value = 'BLK-ADMIN-01';
+    $('devKeyInput').value = 'BLACKOUT-2026';
+  };
+}
+
+document.querySelectorAll('#devModal [data-dtab]').forEach((btn) => {
+  btn.onclick = () => {
+    document.querySelectorAll('#devModal [data-dtab]').forEach((b) => b.classList.remove('on'));
+    document.querySelectorAll('#devConsoleView .st-panel').forEach((p) => p.classList.remove('on'));
+    btn.classList.add('on');
+    const target = $('dtab-' + btn.dataset.dtab);
+    if (target) target.classList.add('on');
+    if (btn.dataset.dtab === 'rooms') loadDevRooms();
+    if (btn.dataset.dtab === 'players') loadDevPlayers();
+  };
+});
+
+if ($('devLoginBtn')) {
+  $('devLoginBtn').onclick = async () => {
+    const rawId = ($('devIdInput').value || '').trim().toUpperCase();
+    const rawKey = ($('devKeyInput').value || '').trim().toUpperCase();
+    const idAlias = (rawId === 'DEV' || rawId === 'DEV-01' || rawId === 'BLACKOUT-DEV') ? 'BLK-DEV-01'
+      : (rawId === 'ADMIN' || rawId === 'ADMIN-01' || rawId === 'BLACKOUT-ADMIN') ? 'BLK-ADMIN-01' : rawId;
+    const identity = DEV_IDENTITIES[idAlias];
+    if (!identity) return toast('Invalid Dev / Admin ID (Use BLK-DEV-01 or BLK-ADMIN-01)');
+    if (!identity.keys.includes(rawKey)) return toast('Invalid Clearance Passkey (Use BLACKOUT-2026)');
+
+    activeDevSession = identity;
+    localStorage.setItem('mf_dev_session', JSON.stringify({ code: identity.code, ts: Date.now() }));
+
+    if (!session || !session.user) {
+      uid = identity.uid;
+    }
+    if (!myName || myName === 'Player') myName = identity.defaultName;
+    myAvatar = localStorage.getItem('mf_avatar_' + uid) || identity.defaultAvatar;
+    $('name').value = myName;
+    $('sbName').textContent = myName;
+    bindAvatarImg($('sbAvatarImg'), myAvatar, myName);
+    $('myUidText').textContent = uid;
+
+    try {
+      await sb.from('profiles').upsert({ id: uid, display_name: myName, avatar: myAvatar });
+    } catch (e) {}
+
+    syncDevBadgesUI();
+    initAvatarGrid();
+    renderLobby();
+    if (started && $('hostBar')) $('hostBar').hidden = false;
+    renderDevModalState();
+    toast(`${identity.title} ACTIVATED! All game features & 48 avatars unlocked.`);
+  };
+}
+
+if ($('devLogoutBtn')) {
+  $('devLogoutBtn').onclick = () => {
+    activeDevSession = null;
+    devInfiniteAbilities = false;
+    devTeleportMode = false;
+    if ($('devInfAbChk')) $('devInfAbChk').checked = false;
+    if ($('devTeleportChk')) $('devTeleportChk').checked = false;
+    localStorage.removeItem('mf_dev_session');
+    if (isLockedAvatar(myAvatar)) {
+      myAvatar = 'avatars/avatar_01.png';
+      bindAvatarImg($('sbAvatarImg'), myAvatar, myName);
+    }
+    syncDevBadgesUI();
+    initAvatarGrid();
+    renderLobby();
+    if (started && $('hostBar')) $('hostBar').hidden = !(game && game.host === uid);
+    renderDevModalState();
+    toast('Exited Dev / Admin ID clearance');
+    if (!session || !session.user) location.replace('auth.html');
+  };
+}
+
+// Dev Console Live Overrides
+if ($('devForcePingBtn')) {
+  $('devForcePingBtn').onclick = async () => {
+    if (!gid || !game) return toast('Join or create a game first');
+    await releasePing();
+    await loadPings();
+    toast('📡 DEV OVERRIDE: Global radar ping broadcasted!');
+  };
+}
+
+if ($('devSwitchRoleBtn')) {
+  $('devSwitchRoleBtn').onclick = async () => {
+    if (!gid || !game) return toast('Join or create a game first');
+    const cur = myRole() || 'hider';
+    const nextRole = cur === 'seeker' ? 'hider' : 'seeker';
+    if (players[uid]) players[uid].role = nextRole;
+    try {
+      await sb.from('game_players').update({ role: nextRole }).eq('game_id', gid).eq('user_id', uid);
+      await sb.rpc('set_role', { g: gid, u: uid, r: nextRole });
+    } catch (e) {}
+    if (started) {
+      $('role').textContent = nextRole.toUpperCase();
+      $('role').style.background = nextRole === 'seeker' ? 'var(--or)' : 'var(--yl)';
+      $('tagBtn').style.display = nextRole === 'seeker' ? 'block' : 'none';
+      initAbilitiesHUD();
+    }
+    await loadPlayers();
+    toast('🔄 DEV OVERRIDE: Role switched to ' + nextRole.toUpperCase());
+  };
+}
+
+if ($('devUntagSelfBtn')) {
+  $('devUntagSelfBtn').onclick = async () => {
+    if (!gid || !game) return toast('Join or create a game first');
+    if (players[uid]) players[uid].status = 'alive';
+    try {
+      await sb.from('game_players').update({ status: null }).eq('game_id', gid).eq('user_id', uid);
+      await sb.from('tags').delete().eq('game_id', gid).eq('target', uid);
+    } catch (e) {}
+    await loadPlayers();
+    await loadTags();
+    toast('🛡️ DEV OVERRIDE: Player revived & untagged!');
+  };
+}
+
+if ($('devResetCdBtn')) {
+  $('devResetCdBtn').onclick = () => {
+    Object.values(abilities).forEach((a) => { a.cd = 0; });
+    updateAbilitiesUI();
+    toast('⚡ DEV OVERRIDE: All 4 ability cooldowns reset to 0s!');
+  };
+}
+
+if ($('devSpawnRedBtn')) {
+  $('devSpawnRedBtn').onclick = () => {
+    if (!map || !game) return toast('Start a live match map first');
+    redLayers.forEach((l) => l.remove()); redLayers = [];
+    currentRedZones = createRedZones(gc(), radius(), 3);
+    currentRedZones.forEach((rz) => {
+      const redCirc = L.circle([rz.lat, rz.lng], { radius: rz.radius, color: '#B3261E', weight: 3, fillColor: '#B3261E', fillOpacity: 0.24, interactive: false }).addTo(map);
+      redLayers.push(redCirc);
+    });
+    toast('☣️ DEV OVERRIDE: 3 Dynamic Red Hazard Zones spawned!');
+  };
+}
+
+if ($('devClearRedBtn')) {
+  $('devClearRedBtn').onclick = () => {
+    redLayers.forEach((l) => l.remove()); redLayers = []; currentRedZones = [];
+    toast('🧹 DEV OVERRIDE: All Red Hazard Zones cleared!');
+  };
+}
+
+if ($('devInfAbChk')) {
+  $('devInfAbChk').onchange = () => {
+    devInfiniteAbilities = $('devInfAbChk').checked;
+    if (devInfiniteAbilities) {
+      Object.values(abilities).forEach((a) => { a.cd = 0; });
+      updateAbilitiesUI();
+    }
+    toast(devInfiniteAbilities ? 'Infinite Abilities ON (0s Cooldown)' : 'Standard Ability Cooldowns restored');
+  };
+}
+
+if ($('devTeleportChk')) {
+  $('devTeleportChk').onchange = () => {
+    devTeleportMode = $('devTeleportChk').checked;
+    toast(devTeleportMode ? 'Map-Click Teleport ON: Click anywhere on map to move' : 'Map-Click Teleport OFF');
+  };
+}
+
+async function loadDevRooms() {
+  const box = $('devRoomsList');
+  if (!box) return;
+  box.replaceChildren(el('p', 'mu', 'Scanning active games...'));
+  try {
+    const { data } = await sb.from('games').select('id,code,status,round,created_at').order('created_at', { ascending: false }).limit(12);
+    box.replaceChildren();
+    if (!data || !data.length) {
+      box.appendChild(el('p', 'mu', 'No active rooms found on server'));
+      return;
+    }
+    data.forEach((g) => {
+      const it = el('div', 'fr-item');
+      const info = el('div', 'fr-info');
+      const meta = el('div');
+      meta.appendChild(el('b', 'fr-name', `Room ${g.code} · ${(g.status || 'lobby').toUpperCase()}`));
+      meta.appendChild(el('div', 'mu', `Round ${g.round || 1} · ID: ${String(g.id).slice(0, 8)}...`));
+      meta.lastChild.style.fontSize = '11px';
+      info.appendChild(meta);
+      const joinBtn = el('button', 'btn-sm', gid === g.id ? 'Current' : 'Join / Control');
+      joinBtn.disabled = gid === g.id;
+      joinBtn.onclick = async () => {
+        $('devModal').hidden = true;
+        $('code').value = g.code;
+        gid = g.id;
+        await enter();
+        toast('Joined Room ' + g.code + ' with Dev/Admin Host Authority');
+      };
+      it.append(info, joinBtn);
+      box.appendChild(it);
+    });
+  } catch (e) {
+    box.replaceChildren(el('p', 'mu', 'Could not fetch rooms list'));
+  }
+}
+if ($('devRefreshRoomsBtn')) $('devRefreshRoomsBtn').onclick = loadDevRooms;
+
+// Privacy-Shielded Player Directory (Strictly excludes email, password, auth tokens, phone, IP)
+async function loadDevPlayers() {
+  const box = $('devPlayersList');
+  if (!box) return;
+  box.replaceChildren();
+
+  const renderPlayerCard = (pObj, inCurrentMatch) => {
+    const it = el('div', 'fr-item');
+    it.style.flexDirection = 'column';
+    it.style.alignItems = 'stretch';
+    it.style.gap = '8px';
+
+    const top = el('div', 'row');
+    top.style.justifyContent = 'space-between';
+    top.style.alignItems = 'center';
+
+    const info = el('div', 'fr-info');
+    const av = el('img', 'av-mini');
+    bindAvatarImg(av, pObj.avatar || 'avatars/avatar_01.png', pObj.name);
+    const txt = el('div');
+    txt.appendChild(el('b', 'fr-name', pObj.name || 'Player'));
+    const sub = el('div', 'mu', `Public UID: ${String(pObj.id).slice(0, 12)}...`);
+    sub.style.fontSize = '11px';
+    txt.appendChild(sub);
+    info.append(av, txt);
+    top.appendChild(info);
+
+    if (inCurrentMatch) {
+      const roleSpan = el('span', pObj.role === 'seeker' ? 'or' : 'yl', (pObj.role || 'hider').toUpperCase());
+      roleSpan.style.fontWeight = '700';
+      roleSpan.style.fontSize = '11px';
+      top.appendChild(roleSpan);
+    }
+    it.appendChild(top);
+
+    const privRow = el('div', 'row');
+    privRow.style.justifyContent = 'space-between';
+    privRow.style.alignItems = 'center';
+    privRow.style.flexWrap = 'wrap';
+    privRow.style.gap = '6px';
+    const redact = el('span', 'redacted-tag', '🔒 Email / Password / Auth / IP: [REDACTED · PRIVATE]');
+    privRow.appendChild(redact);
+
+    if (inCurrentMatch && gid) {
+      const nextR = pObj.role === 'seeker' ? 'hider' : 'seeker';
+      const roleBtn = el('button', 'btn-sm o', 'Make ' + nextR);
+      roleBtn.onclick = async () => {
+        try {
+          await sb.from('game_players').update({ role: nextR }).eq('game_id', gid).eq('user_id', pObj.id);
+          await sb.rpc('set_role', { g: gid, u: pObj.id, r: nextR });
+        } catch (e) {}
+        await loadPlayers();
+        loadDevPlayers();
+        toast(`Set ${pObj.name} to ${nextR.toUpperCase()}`);
+      };
+      privRow.appendChild(roleBtn);
+    }
+    it.appendChild(privRow);
+    box.appendChild(it);
+  };
+
+  const matchList = Object.values(players);
+  if (matchList.length) {
+    box.appendChild(el('div', 'mono', `CURRENT MATCH PLAYERS (${matchList.length})`));
+    matchList.forEach((mp) => renderPlayerCard({ id: mp.user_id, name: mp.name, role: mp.role, avatar: 'avatars/avatar_01.png' }, true));
+  }
+
+  try {
+    // Only public gameplay columns are queried — private user tables/columns are never accessed
+    const { data } = await sb.from('profiles').select('id,display_name,avatar,games_played,wins').limit(15);
+    if (data && data.length) {
+      const hdr = el('div', 'mono', 'PUBLIC AGENT PROFILES (ZERO-PII)');
+      hdr.style.marginTop = '8px';
+      box.appendChild(hdr);
+      data.forEach((pr) => {
+        if (!players[pr.id]) {
+          renderPlayerCard({ id: pr.id, name: `${pr.display_name || 'Player'} (${pr.games_played || 0}G / ${pr.wins || 0}W)`, avatar: pr.avatar }, false);
+        }
+      });
+    }
+  } catch (e) {}
+}
 
 // Save Profile (Name & HD Avatar)
 $('saveProfileBtn').onclick = async () => {
@@ -421,7 +799,10 @@ $('sbRulesBtn').onclick = () => {
     const cl = el('button', '', 'Got it'); cl.onclick = closeSheet; s.appendChild(cl);
   });
 };
-$('sbOut').onclick = () => sb.auth.signOut().then(() => location.replace('auth.html'));
+$('sbOut').onclick = () => {
+  localStorage.removeItem('mf_dev_session');
+  sb.auth.signOut().then(() => location.replace('auth.html'));
+};
 
 /* ---------- 4. Special Abilities Engine ---------- */
 const abilities = {
@@ -443,32 +824,34 @@ function initAbilitiesHUD() {
 }
 
 function triggerAbility(key) {
-  const a = abilities[key], role = myRole();
-  if (a.cd > 0 || a.active) return;
+  const a = abilities[key], role = myRole(), dev = isDevOrAdmin();
+  if ((a.cd > 0 && !devInfiniteAbilities) || a.active) return;
+  const nextCd = devInfiniteAbilities ? 0 : a.maxCd;
 
   if (key === 'ghost') {
-    if (role === 'seeker') return toast('Ghost is only for hiders');
-    a.active = true; a.cd = a.maxCd;
+    if (role === 'seeker' && !dev) return toast('Ghost is only for hiders');
+    a.active = true; a.cd = nextCd;
     toast('👻 GHOST ACTIVE! Invisible for 15s');
     $('abGhost').classList.add('active');
     setTimeout(() => { a.active = false; $('abGhost').classList.remove('active'); toast('Ghost expired'); }, a.dur * 1000);
   } else if (key === 'decoy') {
-    if (role === 'seeker') return toast('Decoy is only for hiders');
-    a.cd = a.maxCd;
+    if (role === 'seeker' && !dev) return toast('Decoy is only for hiders');
+    a.cd = nextCd;
     if (me) {
       const ang = Math.random() * Math.PI * 2;
-      const fakeLoc = { lat: me.lat + (Math.sin(ang) * 90) / 110540, lng: me.lng + (Math.cos(ang) * 90) / mlng(me.lat) };
+      const mlngVal = 111320 * Math.cos((me.lat * Math.PI) / 180);
+      const fakeLoc = { lat: me.lat + (Math.sin(ang) * 90) / 110540, lng: me.lng + (Math.cos(ang) * 90) / mlngVal };
       sb.from('pings').upsert({ game_id: gid, taken_at: new Date(nowMs()).toISOString(), hiders: [fakeLoc] }).then(() => {});
       toast('📍 DECOY DEPLOYED! False ping broadcasted');
     }
   } else if (key === 'boost') {
-    a.active = true; a.cd = a.maxCd;
+    a.active = true; a.cd = nextCd;
     toast('⚡ SPRINT BOOST ACTIVE! Pace surged');
     $('abBoost').classList.add('active');
     setTimeout(() => { a.active = false; $('abBoost').classList.remove('active'); }, a.dur * 1000);
   } else if (key === 'radar') {
-    a.cd = a.maxCd;
-    if (role === 'seeker') {
+    a.cd = nextCd;
+    if (role === 'seeker' || dev) {
       releasePing();
       toast('🔍 SONAR PULSE: Immediate hider scan triggered!');
     } else {
@@ -517,21 +900,31 @@ const isPaused = () => !!(game && game.paused_at);
 const elapsed = () => ((game.paused_at ? Date.parse(game.paused_at) : nowMs()) - startMs()) / 1000;
 const myRole = () => players[uid] && players[uid].role;
 const amTagged = () => players[uid] && players[uid].status === 'tagged';
+const isHostOrDev = () => (game && game.host === uid) || isDevOrAdmin();
 const fail = (e, m) => { console.error(e); toast(m || 'Something went wrong. Try again.'); };
 
 bindAvatarImg($('sbAvatarImg'), myAvatar, myName);
 const { data: { session } } = await sb.auth.getSession();
-if (!session || !confirmed(session.user)) { location.replace('auth.html'); await new Promise(() => {}); }
-uid = session.user.id;
-sb.auth.onAuthStateChange((ev) => { if (ev === 'SIGNED_OUT') location.replace('auth.html'); });
-const { data: prof } = await sb.from('profiles').select('*').eq('id', uid).maybeSingle();
-myName = (prof && prof.display_name) || 'Player';
-const savedAv = (prof && prof.avatar) || localStorage.getItem('mf_avatar_' + uid);
+const wantsDevGate = new URLSearchParams(location.search).get('dev') === '1';
+if ((!session || !confirmed(session.user)) && !isDevOrAdmin()) {
+  if (wantsDevGate) {
+    openDevModal();
+  } else {
+    location.replace('auth.html');
+    await new Promise(() => {});
+  }
+}
+uid = (session && session.user) ? session.user.id : (activeDevSession ? activeDevSession.uid : '00000000-0000-4000-d000-000000000001');
+sb.auth.onAuthStateChange((ev) => { if (ev === 'SIGNED_OUT' && !isDevOrAdmin()) location.replace('auth.html'); });
+const { data: prof } = await sb.from('profiles').select('id,display_name,avatar,games_played,wins,distance_m,calories').eq('id', uid).maybeSingle();
+myName = (prof && prof.display_name) || (activeDevSession ? activeDevSession.defaultName : 'Player');
+const savedAv = (prof && prof.avatar) || localStorage.getItem('mf_avatar_' + uid) || (activeDevSession && activeDevSession.defaultAvatar);
 myAvatar = (savedAv && savedAv.startsWith('avatars/') && !isLockedAvatar(savedAv)) ? savedAv : 'avatars/avatar_01.png';
 $('name').value = myName;
 $('sbName').textContent = myName;
 bindAvatarImg($('sbAvatarImg'), myAvatar, myName);
 $('myUidText').textContent = uid;
+syncDevBadgesUI();
 homeCards(prof);
 loadFriends();
 listenInvites();
@@ -547,7 +940,7 @@ async function homeCards(p) {
   }
 }
 
-$('so').onclick = () => sb.auth.signOut().then(() => location.replace('auth.html'));
+if ($('so')) $('so').onclick = () => sb.auth.signOut().then(() => location.replace('auth.html'));
 const qc = new URLSearchParams(location.search).get('code');
 if (qc) $('code').value = qc.slice(0, 6).toUpperCase();
 $('sheet').onclick = (e) => { if (e.target === $('sheet') && !$('sheet').dataset.lock) closeSheet(); };
@@ -626,19 +1019,37 @@ $('share').onclick = async () => {
 let rt, rulesInit = false;
 const rf = rulesForm(DEFAULTS, { onChange: (r) => {
   clearTimeout(rt);
-  rt = setTimeout(() => { if (game && game.host === uid && game.status === 'lobby') sb.from('games').update({ rules: r }).eq('id', gid).then(() => {}); }, 450);
+  rt = setTimeout(() => { if (game && isHostOrDev() && game.status === 'lobby') sb.from('games').update({ rules: r }).eq('id', gid).then(() => {}); }, 450);
 } });
 $('rulesForm').appendChild(rf.el);
 
 function renderLobby() {
   if (!game) return;
-  const host = game.host === uid;
+  const host = isHostOrDev();
   $('lcode').textContent = game.code;
   const list = $('plist'); list.replaceChildren();
   Object.values(players).forEach((p) => {
-    const row = el('div', 'pl'); row.appendChild(el('span', '', p.name));
+    const row = el('div', 'pl');
+    const nameWrap = el('span', '', p.name);
+    if (p.user_id === uid && isDevOrAdmin()) {
+      nameWrap.appendChild(el('span', 'dev-tag', activeDevSession.role));
+    }
+    row.appendChild(nameWrap);
     row.appendChild(el('span', p.role === 'seeker' ? 'or' : 'yl', p.role.toUpperCase()));
-    if (host && p.role !== 'seeker' && game.status === 'lobby') { const b = el('button', '', 'Make seeker'); b.onclick = async () => { const { error } = await sb.rpc('set_role', { g: gid, u: p.user_id, r: 'seeker' }); if (error) fail(error); else loadPlayers(); }; row.appendChild(b); }
+    if (host && game.status === 'lobby') {
+      const nextRole = p.role === 'seeker' ? 'hider' : 'seeker';
+      if (p.role !== 'seeker' || isDevOrAdmin()) {
+        const b = el('button', '', 'Make ' + nextRole);
+        b.onclick = async () => {
+          const { error } = await sb.rpc('set_role', { g: gid, u: p.user_id, r: nextRole });
+          if (error) {
+            await sb.from('game_players').update({ role: nextRole }).eq('game_id', gid).eq('user_id', p.user_id);
+          }
+          loadPlayers();
+        };
+        row.appendChild(b);
+      }
+    }
     list.appendChild(row);
   });
   $('start').style.display = host ? 'block' : 'none'; $('lhint').style.display = host ? 'none' : 'block';
@@ -669,7 +1080,7 @@ function chooseShape(r, A) {
     onDraw: editArea
   });
 }
-$('areaAsum').onclick = () => { if (game && game.host === uid && game.status === 'lobby') chooseShape(normalize(game.rules || {}), game.area || { type: 'Circle' }); };
+$('areaAsum').onclick = () => { if (game && isHostOrDev() && game.status === 'lobby') chooseShape(normalize(game.rules || {}), game.area || { type: 'Circle' }); };
 
 async function autoArea() {
   loading('Finding a good spot...');
@@ -764,6 +1175,16 @@ function buildMap() {
   lg.onAdd = () => { const d = L.DomUtil.create('div', 'legend'); d.innerHTML = '<span><i style="background:#D4621A"></i>Seeker</span><span><i style="background:#F4AE52"></i>Hider</span><span><i style="background:#B3261E"></i>Red Zone</span>'; return d; };
   lg.addTo(map);
   const zc = L.control({ position: 'topleft' }); zc.onAdd = () => { const d = L.DomUtil.create('div', 'zpill'); d.id = 'zpill'; return d; }; zc.addTo(map);
+  map.on('click', (e) => {
+    if (!isDevOrAdmin() || !devTeleportMode || !pts) return;
+    me = { lat: e.latlng.lat, lng: e.latlng.lng };
+    const role = myRole() || 'hider';
+    pts.setMe(me.lat, me.lng, 5, role, myName);
+    const row = { game_id: gid, user_id: uid, lat: me.lat, lng: me.lng, updated_at: new Date().toISOString() };
+    sb.from('locations').upsert(row).then(() => {});
+    if (role === 'seeker') sb.from('live_positions').upsert(row).then(() => {});
+    toast(`📍 Dev Teleported to ${me.lat.toFixed(4)}, ${me.lng.toFixed(4)}`);
+  });
   drawZone(true);
 }
 
@@ -784,7 +1205,7 @@ async function loadLive() {
 }
 
 async function loadPings() {
-  if (!map || !pts || myRole() !== 'seeker') return;
+  if (!map || !pts || (myRole() !== 'seeker' && !isDevOrAdmin())) return;
   const { data } = await sb.from('pings').select('taken_at,hiders').eq('game_id', gid).maybeSingle();
   if (!data || data.taken_at === lastPing) return;
   const first = lastPing === ''; lastPing = data.taken_at;
@@ -819,12 +1240,13 @@ function startGame() {
   started = true; show('game'); finished = false; setDock(false);
   const role = myRole();
   $('role').textContent = role.toUpperCase(); $('role').style.background = role === 'seeker' ? 'var(--or)' : 'var(--yl)';
+  if ($('hostBar')) $('hostBar').hidden = !isHostOrDev();
   try { if (!window.L) throw new Error('Leaflet missing'); buildMap(); } catch (e) { toast('Error loading map'); }
   firstFix = true; follow = true;
   initAbilitiesHUD();
 
   watchId = navigator.geolocation.watchPosition((p) => {
-    if (finished) return;
+    if (finished || devTeleportMode) return;
     me = { lat: p.coords.latitude, lng: p.coords.longitude };
     if (!map || !pts) return;
     pts.setMe(me.lat, me.lng, p.coords.accuracy, role, myName);
@@ -839,7 +1261,7 @@ function startGame() {
     }
   }, (err) => { const n = Date.now(); if (n - lastGpsErr > 20000) { lastGpsErr = n; toast('GPS signal weak'); } }, { enableHighAccuracy: true, maximumAge: 1000, timeout: 20000 });
   loadLive(); loadPings();
-  $('tagBtn').style.display = role === 'seeker' ? 'block' : 'none';
+  $('tagBtn').style.display = (role === 'seeker' || isDevOrAdmin()) ? 'block' : 'none';
   loop = setInterval(tick, 1000); tick();
 }
 
@@ -851,7 +1273,7 @@ function tick() {
   tickAbilities();
 
   const w = hiders().length && freeHiders().length === 0 ? 'seekers' : t >= end ? 'hiders' : null;
-  if (w) { if (game.host === uid && game.status !== 'over') sb.rpc('finish_game', { g: gid, w }).then(() => {}); return finish(w); }
+  if (w) { if (isHostOrDev() && game.status !== 'over') sb.rpc('finish_game', { g: gid, w }).then(() => {}); return finish(w); }
   const kc = Math.round((MET[mode] * 70 * t) / 3600);
   $('tm').textContent = mmss(t); $('kc').textContent = kc; $('ds').textContent = Math.round(dist); $('clock').textContent = mmss(end - t);
   const out = me && map && !insideZone(rad);
@@ -876,13 +1298,13 @@ function tick() {
   if (t >= hs && r.pingSec > 0 && !isPaused()) {
     const isDue = np ? nowMs() >= np : (t >= hs && !lastPing);
     if (isDue) {
-      const isHost = game.host === uid;
+      const isHost = isHostOrDev();
       const isFallback = !isHost && np && (nowMs() - np > 2000);
       if (isHost || isFallback) releasePing();
     }
   }
 
-  if (role === 'seeker' && t >= hs && next <= 1 && Date.now() - lastPingFetch > 1000) {
+  if ((role === 'seeker' || isDevOrAdmin()) && t >= hs && next <= 1 && Date.now() - lastPingFetch > 1000) {
     lastPingFetch = Date.now();
     loadPings();
   }
