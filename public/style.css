@@ -245,7 +245,7 @@ body.editing{overflow:hidden}
 .fr-name{font-weight:700;font-size:13.5px}
 .fr-btn{all:unset;box-sizing:border-box;padding:5px 12px;border-radius:4px;background:var(--B);color:#FEF3E2;font:700 11px var(--fm);cursor:pointer}
 
-/* ---------- 3. 35 HD Avatars (24 Unlocked + 11 Locked) & Settings System ---------- */
+/* ---------- 3. 48 HD Avatars (24 Unlocked + 24 Locked) & Settings System ---------- */
 .st-box{max-height:86dvh}
 .st-tabs{display:flex;gap:6px;border-bottom:1.5px solid var(--line);padding-bottom:10px;margin-bottom:14px}
 .st-tab-btn{all:unset;box-sizing:border-box;flex:1;text-align:center;padding:10px 6px;border-radius:6px;font:700 13px var(--fb);color:var(--mu);cursor:pointer;transition:background-color .2s,color .2s}
@@ -354,3 +354,22 @@ body.editing{overflow:hidden}
 .ab-name{font:700 8.5px var(--fm);letter-spacing:.04em;text-transform:uppercase;color:var(--mu);margin-top:2px}
 .ab-cd{position:absolute;inset:0;border-radius:50%;display:flex;align-items:center;justify-content:center;font:700 13px var(--fm);background:rgba(21,11,5,.75);color:#FEF3E2;opacity:0;pointer-events:none}
 .ab-btn.cooling .ab-cd{opacity:1}
+
+/* ---------- 5. Dev & Admin Portal & Privacy Shield Styling ---------- */
+.dev-box{max-width:520px}
+.dev-badge-icon{background:color-mix(in srgb,var(--A) 22%,transparent);border-color:color-mix(in srgb,var(--A) 55%,transparent);color:var(--ort)}
+.dev-privacy-banner{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:10px;background:color-mix(in srgb,var(--B) 12%,var(--inp));border:1.5px dashed color-mix(in srgb,var(--B) 50%,var(--line));font-size:12px;line-height:1.45;color:var(--tx)}
+.dev-privacy-banner svg{color:var(--ort);margin-top:2px}
+.dev-preset-row{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:10px}
+.dev-status-bar{border-color:var(--A);background:color-mix(in srgb,var(--A) 15%,var(--inp))}
+.dev-priv-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+.dev-pill-ok{font:700 11px var(--fm);padding:6px 8px;border-radius:6px;background:color-mix(in srgb,var(--B) 14%,var(--inp));border:1px solid color-mix(in srgb,var(--B) 40%,var(--line));color:var(--ort)}
+.dev-act-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.dev-act-grid .btn-sm{width:100%;justify-content:center;text-align:center;height:38px}
+.dev-pill{background:var(--A)!important;color:#2A1A0E!important;font-weight:800}
+.dev-dot{background:var(--A)!important;color:#2A1A0E!important}
+.dev-tag{display:inline-flex;align-items:center;padding:2px 6px;border-radius:4px;background:var(--A);color:#2A1A0E;font:800 10px var(--fm);letter-spacing:.05em;margin-left:6px;vertical-align:middle}
+.redacted-tag{display:inline-flex;align-items:center;gap:4px;font:700 10px var(--fm);color:var(--mu);background:color-mix(in srgb,var(--tx) 8%,var(--inp));border:1px dashed var(--line);padding:2px 6px;border-radius:4px}
+.avatar-opt.dev-unlocked{border-style:solid;border-color:color-mix(in srgb,var(--A) 65%,var(--line));cursor:pointer}
+.avatar-opt.dev-unlocked .av-img{filter:contrast(1.08) saturate(1.22) drop-shadow(0 2px 5px rgba(0,0,0,.4))}
+.av-dev-badge{position:absolute;right:-4px;bottom:-4px;padding:1px 4px;border-radius:4px;background:#2A1A0E;border:1.5px solid #F4AE52;color:#F4AE52;font:800 8px var(--fm);z-index:3;pointer-events:none;box-shadow:0 2px 4px rgba(0,0,0,.5)}
