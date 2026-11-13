@@ -62,13 +62,15 @@ a{color:inherit}[hidden]{display:none!important}
 .brand h2{font:400 clamp(56px,8vw,118px)/.93 var(--fh);text-transform:uppercase;margin:0}.brand h2 span{color:var(--B);display:block}
 .brand .eb{max-width:none}.brand p{font-size:clamp(16px,1.5vw,19px);color:var(--mu);line-height:1.6;max-width:42ch;margin:26px 0 30px}
 .pts{display:flex;gap:10px 22px;flex-wrap:wrap}.pts span{font:500 10.5px var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--mu);display:flex;align-items:center;gap:8px}.pts i{width:8px;height:8px;background:var(--B);display:block}
-.box{width:100%;max-width:440px;justify-self:center;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:clamp(24px,3.4vw,38px);box-shadow:var(--sh);animation:in .8s cubic-bezier(.16,1,.3,1)}
+.box{width:100%;max-width:450px;justify-self:center;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:clamp(24px,3.4vw,38px);box-shadow:var(--sh);animation:in .8s cubic-bezier(.16,1,.3,1)}
 @keyframes in{from{opacity:0;transform:translateY(30px)}}
-/* tabs */
-.seg{position:relative;display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--line);margin-bottom:26px}
-.seg button{all:unset;box-sizing:border-box;text-align:center;padding:12px 4px 14px;font:600 14px var(--fb);color:var(--mu);cursor:pointer;transition:color .3s}.seg button.on{color:var(--tx)}
+/* tabs (3-way: Sign in / Create account / Dev & Admin) */
+.seg{position:relative;display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:1px solid var(--line);margin-bottom:26px}
+.seg button{all:unset;box-sizing:border-box;text-align:center;padding:12px 4px 14px;font:600 13.5px var(--fb);color:var(--mu);cursor:pointer;transition:color .3s; display:inline-flex; align-items:center; justify-content:center; gap:5px}.seg button.on{color:var(--tx)}
 .seg button:hover,.seg button:active{transform:none!important;box-shadow:none!important}.seg button{overflow:visible!important}.eye:hover{text-decoration:underline}
-.seg i{position:absolute;left:0;bottom:-1px;height:3px;width:50%;background:var(--B);transition:transform .5s cubic-bezier(.16,1,.3,1)}.seg.up i{transform:translateX(100%)}
+.seg i{position:absolute;left:0;bottom:-1px;height:3px;width:33.333%;background:var(--B);transition:transform .5s cubic-bezier(.16,1,.3,1)}
+.seg.up i{transform:translateX(100%)}
+.seg.dev i{transform:translateX(200%)}
 h1{font:400 clamp(34px,4.4vw,46px)/1 var(--fh);text-transform:uppercase;margin:0 0 8px}.sub{color:var(--mu);margin:0 0 22px;font-size:14.5px;line-height:1.5}
 label{display:block;position:relative;font:500 10.5px var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--mu);margin-bottom:16px}
 input[type=text],input[type=email],input[type=password]{display:block;width:100%;height:50px;margin-top:8px;border-radius:6px;border:1.5px solid var(--line);background:var(--inp);color:var(--tx);padding:0 14px;font:400 16px var(--fb);letter-spacing:0;text-transform:none;outline:none;transition:border-color .25s,box-shadow .25s}
@@ -86,6 +88,11 @@ input::placeholder{color:color-mix(in srgb,var(--mu) 70%,transparent)}input:focu
 .row{display:flex;justify-content:space-between;font-size:13.5px;margin-top:18px}.row a{color:var(--ort);text-decoration:none;cursor:pointer;font-weight:600}.row a:hover{text-decoration:underline}
 .lock{display:flex;gap:8px;align-items:center;justify-content:center;font:500 10px var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--mu);margin-top:20px;text-align:center}
 .mail{font-size:48px;text-align:center}
+.dev-note{display:flex;align-items:flex-start;gap:10px;padding:11px 13px;border-radius:8px;background:color-mix(in srgb,var(--B) 12%,var(--inp));border:1.5px dashed color-mix(in srgb,var(--B) 50%,var(--line));font-size:12px;line-height:1.45;color:var(--tx);margin-bottom:16px}
+.dev-note svg{color:var(--ort);flex:none;margin-top:2px}
+.dev-chips{display:flex;gap:6px;flex-wrap:wrap;margin:-4px 0 14px;align-items:center}
+.dev-chip{all:unset;box-sizing:border-box;padding:5px 10px;border-radius:5px;background:color-mix(in srgb,var(--B) 14%,var(--inp));border:1px solid color-mix(in srgb,var(--B) 45%,var(--line));color:var(--ort);font:700 10.5px var(--fm);cursor:pointer}
+.dev-chip:hover{background:var(--B);color:#FEF3E2}
 @media (max-width:900px){.shell{grid-template-columns:1fr;align-items:start;min-height:0;padding-top:10px}.brand{display:none}#gscrim{background:color-mix(in srgb,var(--bg) 80%,transparent)}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}}
 </style></head><body>
@@ -96,12 +103,31 @@ input::placeholder{color:color-mix(in srgb,var(--mu) 70%,transparent)}input:focu
 <div class="pts"><span><i></i>Verified accounts</span><span><i></i>Private location</span><span><i></i>Play in your browser</span></div></aside>
 <section class="box">
 <div id="vForm">
- <div class="seg" id="seg"><button id="tIn" class="on" type="button">Sign in</button><button id="tUp" type="button">Create account</button><i></i></div>
+ <div class="seg" id="seg">
+   <button id="tIn" class="on" type="button">Sign in</button>
+   <button id="tUp" type="button">Create account</button>
+   <button id="tDev" type="button">
+     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Dev / Admin
+   </button>
+   <i></i>
+ </div>
  <h1 id="ttl">Welcome back</h1><p class="sub" id="sub">Sign in to join or host a game.</p>
  <form id="f" novalidate>
+  <!-- Dev / Admin Privacy & Clearance Banner (shown only on Dev / Admin tab) -->
+  <div id="devBanner" class="dev-note" hidden>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+    <div><b>Zero-PII Dev &amp; Admin Gateway:</b> Grants full in-game access (all 48 avatars, host controls &amp; live overrides) while strictly blocking access to private user emails, passwords, and personal data.</div>
+  </div>
+  <label id="lDevId" hidden>Dedicated Dev / Admin ID<input id="devId" type="text" maxlength="32" autocomplete="off" autocapitalize="characters" placeholder="e.g. BLK-DEV-01 or BLK-ADMIN-01" style="font-family:var(--fm);text-transform:uppercase;letter-spacing:.08em"></label>
+  <div id="devPresets" class="dev-chips" hidden>
+    <span style="font:600 9.5px var(--fm);color:var(--mu);letter-spacing:.08em">IDS:</span>
+    <button type="button" class="dev-chip" id="fillDevBtn">Dev: BLK-DEV-01</button>
+    <button type="button" class="dev-chip" id="fillAdminBtn">Admin: BLK-ADMIN-01</button>
+  </div>
+
   <label id="lName" hidden>Display name<input id="name" type="text" maxlength="14" autocomplete="nickname" placeholder="What should players call you?"></label>
-  <label>Email<input id="email" type="email" autocomplete="email" inputmode="email" placeholder="you@example.com" maxlength="120"></label>
-  <label>Password<span class="eye" id="eye">Show</span><input id="pw" type="password" autocomplete="current-password" maxlength="128" placeholder="At least 10 characters"></label>
+  <label id="lEmail">Email<input id="email" type="email" autocomplete="email" inputmode="email" placeholder="you@example.com" maxlength="120"></label>
+  <label><span id="pwLabelText">Password</span><span class="eye" id="eye">Show</span><input id="pw" type="password" autocomplete="current-password" maxlength="128" placeholder="At least 10 characters"></label>
   <div id="mWrap" hidden><div class="meter" id="meter"><i></i><i></i><i></i><i></i></div><span class="mt" id="mt"></span></div>
   <label class="chk" id="tRow" hidden><input type="checkbox" id="terms"><span>I am 13 or older and agree to the Terms and Privacy Policy.</span></label>
   <label class="chk" id="rRow"><input type="checkbox" id="rem" checked><span>Keep me signed in on this device</span></label>
@@ -109,7 +135,7 @@ input::placeholder{color:color-mix(in srgb,var(--mu) 70%,transparent)}input:focu
   <p id="err" role="alert"></p>
   <button class="btn" id="go" type="submit">Sign in</button>
  </form>
- <div class="or2">or</div>
+ <div class="or2" id="orRow">or</div>
  <button class="btn o" id="gg" type="button">Continue with Google</button>
  <div class="row"><a id="forgot">Forgot password?</a><a href="index.html">Back to site</a></div>
  <div class="lock">🔒 Encrypted connection · We never store your password</div>
@@ -126,8 +152,30 @@ input::placeholder{color:color-mix(in srgb,var(--mu) 70%,transparent)}input:focu
 <script type="module">
 import { sb, confirmed } from './supa.js';
 const $ = (i) => document.getElementById(i);
-let up = false, busy = false, signingUp = false, recovery = false, pending = null;
+let curMode = 'in', busy = false, signingUp = false, recovery = false, pending = null;
 const GO = 'play.html';
+
+// Official Separate Dev & Admin IDs
+const DEV_IDENTITIES = {
+  'BLK-DEV-01': {
+    code: 'BLK-DEV-01',
+    role: 'DEV',
+    title: 'DEVELOPER CLEARANCE',
+    uid: '00000000-0000-4000-d000-000000000001',
+    defaultName: 'Dev_Lead',
+    defaultAvatar: 'avatars/avatar_36.png',
+    keys: ['BLACKOUT-2026', 'BLK-DEV-2026', 'DEV-2026', 'BLACKOUT']
+  },
+  'BLK-ADMIN-01': {
+    code: 'BLK-ADMIN-01',
+    role: 'ADMIN',
+    title: 'ADMIN CLEARANCE',
+    uid: '00000000-0000-4000-a000-000000000001',
+    defaultName: 'Admin_HQ',
+    defaultAvatar: 'avatars/avatar_48.png',
+    keys: ['BLACKOUT-2026', 'BLK-ADMIN-2026', 'ADMIN-2026', 'BLACKOUT']
+  }
+};
 
 /* ---- helpers ---- */
 const say = (t) => ($('err').textContent = t || '');
@@ -144,16 +192,40 @@ function meter() {
   [...$('meter').children].forEach((e, i) => (e.style.background = $('pw').value && i < s.lvl ? cols[s.lvl - 1] : ''));
   $('mt').textContent = !$('pw').value ? '' : s.weak ? 'Too easy to guess' : s.ok ? 'Strong enough' : 'Use 10+ characters with 3 of: a-z, A-Z, 0-9, symbols';
 }
-function mode(u) {
-  up = u; say('');
-  $('seg').classList.toggle('up', u); $('tIn').classList.toggle('on', !u); $('tUp').classList.toggle('on', u);
-  $('ttl').textContent = u ? 'Create your account' : 'Welcome back';
-  $('sub').textContent = u ? 'Pick a name, set a strong password and you’re in.' : 'Sign in to join or host a game.';
-  $('go').textContent = u ? 'Create account' : 'Sign in';
-  $('lName').hidden = !u; $('mWrap').hidden = !u; $('tRow').hidden = !u; $('rRow').hidden = u; $('forgot').hidden = u;
+function mode(m) {
+  curMode = m; say('');
+  const u = m === 'up', d = m === 'dev';
+  $('seg').classList.toggle('up', u);
+  $('seg').classList.toggle('dev', d);
+  $('tIn').classList.toggle('on', m === 'in');
+  $('tUp').classList.toggle('on', u);
+  $('tDev').classList.toggle('on', d);
+
+  $('ttl').textContent = d ? 'Dev & Admin Gate' : u ? 'Create your account' : 'Welcome back';
+  $('sub').textContent = d ? 'Enter your dedicated Dev or Admin ID and clearance passkey.' : u ? 'Pick a name, set a strong password and you’re in.' : 'Sign in to join or host a game.';
+  $('go').textContent = d ? 'Enter with Dev / Admin ID' : u ? 'Create account' : 'Sign in';
+
+  $('devBanner').hidden = !d;
+  $('lDevId').hidden = !d;
+  $('devPresets').hidden = !d;
+  $('lEmail').hidden = d;
+  $('lName').hidden = !u;
+  $('mWrap').hidden = !u;
+  $('tRow').hidden = !u;
+  $('rRow').hidden = u;
+  $('forgot').hidden = u || d;
+  $('orRow').hidden = d;
+  $('gg').hidden = d;
+
+  $('pwLabelText').textContent = d ? 'Clearance Passkey' : 'Password';
+  $('pw').placeholder = d ? 'Enter clearance passkey (BLACKOUT-2026)' : 'At least 10 characters';
   $('pw').autocomplete = u ? 'new-password' : 'current-password';
 }
-$('tIn').onclick = () => mode(false); $('tUp').onclick = () => mode(true);
+$('tIn').onclick = () => mode('in');
+$('tUp').onclick = () => mode('up');
+$('tDev').onclick = () => mode('dev');
+$('fillDevBtn').onclick = () => { $('devId').value = 'BLK-DEV-01'; $('pw').value = 'BLACKOUT-2026'; };
+$('fillAdminBtn').onclick = () => { $('devId').value = 'BLK-ADMIN-01'; $('pw').value = 'BLACKOUT-2026'; };
 $('pw').oninput = meter;
 $('eye').onclick = () => { const h = $('pw').type === 'password'; $('pw').type = h ? 'text' : 'password'; $('eye').textContent = h ? 'Hide' : 'Show'; };
 
@@ -182,10 +254,30 @@ $('f').addEventListener('submit', async (ev) => {
   const email = $('email').value.trim().toLowerCase(), pw = $('pw').value, name = $('name').value.trim().replace(/[<>]/g, '');
   busy = true; $('go').disabled = true; say('');
   try {
-    if (recovery) { // set a new password after the reset email
+    if (curMode === 'dev') {
+      const rawId = ($('devId').value || '').trim().toUpperCase();
+      const rawKey = (pw || '').trim().toUpperCase();
+      const idAlias = (rawId === 'DEV' || rawId === 'DEV-01' || rawId === 'BLACKOUT-DEV') ? 'BLK-DEV-01'
+        : (rawId === 'ADMIN' || rawId === 'ADMIN-01' || rawId === 'BLACKOUT-ADMIN') ? 'BLK-ADMIN-01' : rawId;
+      const identity = DEV_IDENTITIES[idAlias];
+      if (!identity) {
+        fail();
+        say('Invalid Dev / Admin ID (Use BLK-DEV-01 or BLK-ADMIN-01).');
+      } else if (!identity.keys.includes(rawKey)) {
+        fail();
+        say('Invalid Clearance Passkey.');
+      } else {
+        clearFails();
+        setKeep();
+        localStorage.setItem('mf_dev_session', JSON.stringify({ code: identity.code, ts: Date.now() }));
+        location.replace(GO);
+        return;
+      }
+    } else if (recovery) { // set a new password after the reset email
       if (!score(pw).ok) { say('Choose a stronger password.'); }
       else { const { error } = await sb.auth.updateUser({ password: pw }); if (error) throw error; location.replace(GO); }
     } else {
+      const up = curMode === 'up';
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { say('Enter a valid email address.'); }
       else if (up && name.length < 2) { say('Choose a display name (2 to 14 characters).'); }
       else if (up && !score(pw).ok) { say('Choose a stronger password.'); }
@@ -193,11 +285,11 @@ $('f').addEventListener('submit', async (ev) => {
       else if (!up && !pw) { say('Enter your password.'); }
       else {
         setKeep();
+        localStorage.removeItem('mf_dev_session');
         if (up) {
           signingUp = true;
           const { data, error } = await sb.auth.signUp({ email, password: pw, options: { data: { display_name: name }, emailRedirectTo: location.origin + '/auth.html' } });
           signingUp = false; if (error) throw error;
-          // Supabase hides whether an email already exists: an empty identities list means it does
           if (data.user && data.user.identities && data.user.identities.length === 0) { say('Could not create that account. Try signing in instead.'); }
           else if (data.session && confirmed(data.session.user)) location.replace(GO);
           else { pending = { email, pw }; showMail(email); }
@@ -210,12 +302,13 @@ $('f').addEventListener('submit', async (ev) => {
         }
       }
     }
-  } catch (e) { console.error('auth error', e); signingUp = false; if (!up && !recovery) fail(); say(msg(e)); }
+  } catch (e) { console.error('auth error', e); signingUp = false; if (curMode === 'in') fail(); say(msg(e)); }
   busy = false; $('go').disabled = false;
 });
 
 $('gg').onclick = async () => {
   say(''); setKeep();
+  localStorage.removeItem('mf_dev_session');
   const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin + '/' + GO } });
   if (error) say('Google sign-in is not available right now.');
 };
@@ -229,8 +322,8 @@ $('forgot').onclick = async () => {
 
 /* ---- password reset screen (after clicking the reset email) ---- */
 function showRecovery() {
-  recovery = true; $('seg').hidden = true; $('gg').hidden = true; document.querySelector('.or2').hidden = true; $('forgot').hidden = true;
-  $('lName').hidden = true; $('tRow').hidden = true; $('rRow').hidden = true; $('mWrap').hidden = false; $('email').closest('label').hidden = true;
+  recovery = true; $('seg').hidden = true; $('gg').hidden = true; $('orRow').hidden = true; $('forgot').hidden = true;
+  $('lName').hidden = true; $('tRow').hidden = true; $('rRow').hidden = true; $('mWrap').hidden = false; $('lEmail').hidden = true;
   $('ttl').textContent = 'Set a new password'; $('sub').textContent = 'Choose a strong password for your account.'; $('go').textContent = 'Update password';
   $('pw').autocomplete = 'new-password'; $('pw').value = ''; meter();
 }
@@ -251,7 +344,7 @@ $('chk').onclick = async () => {
   const { data, error } = await sb.auth.signInWithPassword({ email: pending.email, password: pending.pw });
   if (!error && confirmed(data.user)) location.replace(GO); else $('ok').textContent = 'Not verified yet. Open the link in your email.';
 };
-$('out').onclick = async () => { pending = null; await sb.auth.signOut(); $('vMail').hidden = true; $('vForm').hidden = false; mode(false); };
+$('out').onclick = async () => { pending = null; await sb.auth.signOut(); $('vMail').hidden = true; $('vForm').hidden = false; mode('in'); };
 
 /* ---- session watching ---- */
 sb.auth.onAuthStateChange((ev, session) => {
@@ -260,12 +353,17 @@ sb.auth.onAuthStateChange((ev, session) => {
   if (ev === 'SIGNED_IN' && session && confirmed(session.user)) location.replace(GO);
 });
 (async () => {
+  try {
+    const savedDev = JSON.parse(localStorage.getItem('mf_dev_session') || 'null');
+    if (savedDev && DEV_IDENTITIES[savedDev.code]) { location.replace(GO); return; }
+  } catch (e) {}
   const { data } = await sb.auth.getSession();
   const hash = location.hash || '';
   if (hash.includes('type=recovery')) return;
   if (data.session && confirmed(data.session.user)) location.replace(GO);
 })();
-mode(false);
+if (new URLSearchParams(location.search).get('dev') === '1') mode('dev');
+else mode('in');
 </script>
 <script>
 /* Real map background: Esri street tiles (light) and Esri dark gray tiles (dark). */
