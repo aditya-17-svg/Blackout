@@ -88,11 +88,6 @@ input::placeholder{color:color-mix(in srgb,var(--mu) 70%,transparent)}input:focu
 .row{display:flex;justify-content:space-between;font-size:13.5px;margin-top:18px}.row a{color:var(--ort);text-decoration:none;cursor:pointer;font-weight:600}.row a:hover{text-decoration:underline}
 .lock{display:flex;gap:8px;align-items:center;justify-content:center;font:500 10px var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--mu);margin-top:20px;text-align:center}
 .mail{font-size:48px;text-align:center}
-.dev-note{display:flex;align-items:flex-start;gap:10px;padding:11px 13px;border-radius:8px;background:color-mix(in srgb,var(--B) 12%,var(--inp));border:1.5px dashed color-mix(in srgb,var(--B) 50%,var(--line));font-size:12px;line-height:1.45;color:var(--tx);margin-bottom:16px}
-.dev-note svg{color:var(--ort);flex:none;margin-top:2px}
-.dev-chips{display:flex;gap:6px;flex-wrap:wrap;margin:-4px 0 14px;align-items:center}
-.dev-chip{all:unset;box-sizing:border-box;padding:5px 10px;border-radius:5px;background:color-mix(in srgb,var(--B) 14%,var(--inp));border:1px solid color-mix(in srgb,var(--B) 45%,var(--line));color:var(--ort);font:700 10.5px var(--fm);cursor:pointer}
-.dev-chip:hover{background:var(--B);color:#FEF3E2}
 @media (max-width:900px){.shell{grid-template-columns:1fr;align-items:start;min-height:0;padding-top:10px}.brand{display:none}#gscrim{background:color-mix(in srgb,var(--bg) 80%,transparent)}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}}
 </style></head><body>
@@ -113,17 +108,7 @@ input::placeholder{color:color-mix(in srgb,var(--mu) 70%,transparent)}input:focu
  </div>
  <h1 id="ttl">Welcome back</h1><p class="sub" id="sub">Sign in to join or host a game.</p>
  <form id="f" novalidate>
-  <!-- Dev / Admin Privacy & Clearance Banner (shown only on Dev / Admin tab) -->
-  <div id="devBanner" class="dev-note" hidden>
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
-    <div><b>Zero-PII Dev &amp; Admin Gateway:</b> Grants full in-game access (all 48 avatars, host controls &amp; live overrides) while strictly blocking access to private user emails, passwords, and personal data.</div>
-  </div>
-  <label id="lDevId" hidden>Dedicated Dev / Admin ID<input id="devId" type="text" maxlength="32" autocomplete="off" autocapitalize="characters" placeholder="e.g. BLK-DEV-01 or BLK-ADMIN-01" style="font-family:var(--fm);text-transform:uppercase;letter-spacing:.08em"></label>
-  <div id="devPresets" class="dev-chips" hidden>
-    <span style="font:600 9.5px var(--fm);color:var(--mu);letter-spacing:.08em">IDS:</span>
-    <button type="button" class="dev-chip" id="fillDevBtn">Dev: BLK-DEV-01</button>
-    <button type="button" class="dev-chip" id="fillAdminBtn">Admin: BLK-ADMIN-01</button>
-  </div>
+  <label id="lDevId" hidden>Dedicated Dev / Admin ID<input id="devId" type="text" maxlength="32" autocomplete="off" autocapitalize="characters" placeholder="" style="font-family:var(--fm);text-transform:uppercase;letter-spacing:.08em"></label>
 
   <label id="lName" hidden>Display name<input id="name" type="text" maxlength="14" autocomplete="nickname" placeholder="What should players call you?"></label>
   <label id="lEmail">Email<input id="email" type="email" autocomplete="email" inputmode="email" placeholder="you@example.com" maxlength="120"></label>
@@ -205,9 +190,7 @@ function mode(m) {
   $('sub').textContent = d ? 'Enter your dedicated Dev or Admin ID and clearance passkey.' : u ? 'Pick a name, set a strong password and you’re in.' : 'Sign in to join or host a game.';
   $('go').textContent = d ? 'Enter with Dev / Admin ID' : u ? 'Create account' : 'Sign in';
 
-  $('devBanner').hidden = !d;
   $('lDevId').hidden = !d;
-  $('devPresets').hidden = !d;
   $('lEmail').hidden = d;
   $('lName').hidden = !u;
   $('mWrap').hidden = !u;
@@ -218,14 +201,12 @@ function mode(m) {
   $('gg').hidden = d;
 
   $('pwLabelText').textContent = d ? 'Clearance Passkey' : 'Password';
-  $('pw').placeholder = d ? 'Enter clearance passkey (BLACKOUT-2026)' : 'At least 10 characters';
+  $('pw').placeholder = d ? '' : 'At least 10 characters';
   $('pw').autocomplete = u ? 'new-password' : 'current-password';
 }
 $('tIn').onclick = () => mode('in');
 $('tUp').onclick = () => mode('up');
 $('tDev').onclick = () => mode('dev');
-$('fillDevBtn').onclick = () => { $('devId').value = 'BLK-DEV-01'; $('pw').value = 'BLACKOUT-2026'; };
-$('fillAdminBtn').onclick = () => { $('devId').value = 'BLK-ADMIN-01'; $('pw').value = 'BLACKOUT-2026'; };
 $('pw').oninput = meter;
 $('eye').onclick = () => { const h = $('pw').type === 'password'; $('pw').type = h ? 'text' : 'password'; $('eye').textContent = h ? 'Hide' : 'Show'; };
 
@@ -262,7 +243,7 @@ $('f').addEventListener('submit', async (ev) => {
       const identity = DEV_IDENTITIES[idAlias];
       if (!identity) {
         fail();
-        say('Invalid Dev / Admin ID (Use BLK-DEV-01 or BLK-ADMIN-01).');
+        say('Invalid Dev / Admin ID.');
       } else if (!identity.keys.includes(rawKey)) {
         fail();
         say('Invalid Clearance Passkey.');
@@ -381,7 +362,7 @@ else mode('in');
 </script>
 <style>/* Palette: cream #FEF3E2 · amber #F4AE52 · burnt orange #D4621A · dark brown #2A1A0E */
 :root[data-theme="dark"]{--bg:#2A1A0E;--card:#38251A;--inp:#21130A;--line:rgba(254,243,226,.16);--tx:#FEF3E2;--mu:#D2BFA5;--or:#F4AE52;--yl:#D4621A;--ort:#E8803A;--ylt:#F4AE52;--onp:#2A1A0E;--bad:#FF9A78;color-scheme:dark}
-:root[data-theme="light"]{--bg:#FEF3E2;--card:#FFF9F1;--inp:#FFFFFF;--line:rgba(42,26,14,.16);--tx:#2A1A0E;--mu:#6B5443;--or:#F4AE52;--yl:#D4621A;--ort:#A94A10;--ylt:#8A5A12;--onp:#2A1A0E;--bad:#B3261E;color-scheme:light}
+:root[data-theme="light"]{--bg:#FEF3E2;--card:#FFF9F1;--inp:#FFFFFF;--line:rgba(42,26,14,.16);--tx:#2A1A0E;--mu:#6B5443;--or:#F4AE52;--yl:#D4621A;--ort:#A94A10;--ylt:#8A5A12;--onp:#2A1A0E;--bad:#FF9A78;color-scheme:light}
 html{background:var(--bg)}
 .tswap,.tswap *{transition:background-color .5s ease,color .5s ease,border-color .5s ease,fill .5s ease,stroke .5s ease,box-shadow .5s ease!important}
 
