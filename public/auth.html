@@ -88,10 +88,45 @@ input::placeholder{color:color-mix(in srgb,var(--mu) 70%,transparent)}input:focu
 .row{display:flex;justify-content:space-between;font-size:13.5px;margin-top:18px}.row a{color:var(--ort);text-decoration:none;cursor:pointer;font-weight:600}.row a:hover{text-decoration:underline}
 .lock{display:flex;gap:8px;align-items:center;justify-content:center;font:500 10px var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--mu);margin-top:20px;text-align:center}
 .mail{font-size:48px;text-align:center}
+/* Blackout Logo Loading Animation */
+.loading{position:fixed;inset:0;z-index:9500;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--bg) 94%,transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);opacity:0;pointer-events:none;transition:opacity .38s cubic-bezier(.16,1,.3,1)}
+.loading.on{opacity:1;pointer-events:auto}
+.ld{text-align:center;transform:scale(.96);transition:transform .38s cubic-bezier(.16,1,.3,1)}.loading.on .ld{transform:scale(1)}
+.ld b{display:block;margin-top:22px;font:800 15px var(--fb);letter-spacing:.3em;color:var(--tx)}.ld p{margin:10px 0 0;min-height:20px;font:500 11px var(--fm);letter-spacing:.14em;text-transform:uppercase;color:var(--mu)}
+.ld-logo{position:relative;display:block;width:86px;height:86px;margin:0 auto;animation:logoFloat 2.4s ease-in-out infinite}
+.ld-svg{width:100%;height:100%;overflow:visible;filter:drop-shadow(0 14px 28px rgba(42,26,14,.32))}
+.ld-card{fill:#2A1A0E;stroke:rgba(244,174,82,.22);stroke-width:1}
+:root[data-theme="dark"] .ld-card{fill:#1B0F07;stroke:rgba(244,174,82,.35)}
+.ld-b{fill:var(--A);animation:bGlow 2s ease-in-out infinite alternate}
+.ld-ring{stroke:var(--B);stroke-width:7;transform-origin:45.5px 33px;animation:ringPulse 1.8s cubic-bezier(.4,0,.2,1) infinite}
+.ld-wave{stroke:var(--B);stroke-width:2.5;transform-origin:45.5px 33px;opacity:0}
+.ld-w1{animation:radarWave 2s cubic-bezier(.2,.6,.35,1) infinite}
+.ld-w2{animation:radarWave 2s cubic-bezier(.2,.6,.35,1) infinite .7s}
+@keyframes logoFloat{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-5px) scale(1.03)}}
+@keyframes bGlow{0%{opacity:.85;filter:drop-shadow(0 0 0px var(--A))}100%{opacity:1;filter:drop-shadow(0 0 10px rgba(244,174,82,.8))}}
+@keyframes ringPulse{0%,100%{transform:scale(1);stroke-width:7}50%{transform:scale(1.16);stroke-width:8;stroke:var(--A)}}
+@keyframes radarWave{0%{transform:scale(1);opacity:.9;stroke-width:3}70%{transform:scale(2.7);opacity:.35;stroke-width:1.5}100%{transform:scale(3.5);opacity:0;stroke-width:.5}}
 @media (max-width:900px){.shell{grid-template-columns:1fr;align-items:start;min-height:0;padding-top:10px}.brand{display:none}#gscrim{background:color-mix(in srgb,var(--bg) 80%,transparent)}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}}
 </style></head><body>
 <div id="gmap" aria-hidden="true"></div><div id="gscrim"></div>
+
+<!-- Blackout Logo Loading Animation -->
+<div id="loading" class="loading on" role="status" aria-live="polite">
+  <div class="ld">
+    <div class="ld-logo">
+      <svg class="ld-svg" viewBox="0 0 64 64" aria-hidden="true">
+        <rect width="64" height="64" rx="16" class="ld-card"/>
+        <path class="ld-b" fill-rule="evenodd" d="M11 14H27C34 14 38 18 38 23.5C38 28 35.5 30.5 32 31.5C36.5 32.5 40 35.5 40 41C40 47 35.5 50 28 50H11ZM19 20.5V27.5H26C29.5 27.5 31 26 31 24C31 22 29.5 20.5 26 20.5ZM19 34.5V43.5H27C31 43.5 32.5 42 32.5 39C32.5 36 31 34.5 27 34.5Z" transform="translate(-1 8) scale(.78)"/>
+        <circle class="ld-ring" cx="45.5" cy="33" r="10" fill="none"/>
+        <circle class="ld-wave ld-w1" cx="45.5" cy="33" r="10" fill="none"/>
+        <circle class="ld-wave ld-w2" cx="45.5" cy="33" r="10" fill="none"/>
+      </svg>
+    </div>
+    <b>BLACKOUT</b>
+    <p id="loadMsg"></p>
+  </div>
+</div>
 <div class="top"><a class="logo" href="index.html"><svg width="36" height="36" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="15" fill="#2A1A0E"/><path fill-rule="evenodd" fill="#F4AE52" transform="translate(-1 8) scale(.78)" d="M11 14H27C34 14 38 18 38 23.5C38 28 35.5 30.5 32 31.5C36.5 32.5 40 35.5 40 41C40 47 35.5 50 28 50H11ZM19 20.5V27.5H26C29.5 27.5 31 26 31 24C31 22 29.5 20.5 26 20.5ZM19 34.5V43.5H27C31 43.5 32.5 42 32.5 39C32.5 36 31 34.5 27 34.5Z"/><circle cx="45.5" cy="33" r="10" fill="none" stroke="#D4621A" stroke-width="7"/></svg>BLACKOUT</a><span id="themeSlot"></span></div>
 <main class="shell">
 <aside class="brand"><p class="eb">REAL STREETS. REAL STRATEGY. REAL CHASE.</p><h2>Your hunt<span>starts here.</span></h2><p>One account for your games, your stats and your friends. Secure, verified and ready in under a minute.</p>
@@ -250,13 +285,14 @@ $('f').addEventListener('submit', async (ev) => {
       } else {
         clearFails();
         setKeep();
+        setLoading(true);
         localStorage.setItem('mf_dev_session', JSON.stringify({ code: identity.code, ts: Date.now() }));
-        location.replace(GO);
+        setTimeout(() => location.replace(GO), 450);
         return;
       }
     } else if (recovery) { // set a new password after the reset email
       if (!score(pw).ok) { say('Choose a stronger password.'); }
-      else { const { error } = await sb.auth.updateUser({ password: pw }); if (error) throw error; location.replace(GO); }
+      else { const { error } = await sb.auth.updateUser({ password: pw }); if (error) throw error; setLoading(true); location.replace(GO); }
     } else {
       const up = curMode === 'up';
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { say('Enter a valid email address.'); }
@@ -272,14 +308,14 @@ $('f').addEventListener('submit', async (ev) => {
           const { data, error } = await sb.auth.signUp({ email, password: pw, options: { data: { display_name: name }, emailRedirectTo: location.origin + '/auth.html' } });
           signingUp = false; if (error) throw error;
           if (data.user && data.user.identities && data.user.identities.length === 0) { say('Could not create that account. Try signing in instead.'); }
-          else if (data.session && confirmed(data.session.user)) location.replace(GO);
+          else if (data.session && confirmed(data.session.user)) { setLoading(true); location.replace(GO); }
           else { pending = { email, pw }; showMail(email); }
         } else {
           const { data, error } = await sb.auth.signInWithPassword({ email, password: pw });
           if (error) {
             if ((error.code || '') === 'email_not_confirmed' || /not confirmed/i.test(error.message || '')) { pending = { email, pw }; showMail(email); }
             else throw error;
-          } else { clearFails(); if (confirmed(data.user)) location.replace(GO); else showMail(email); }
+          } else { clearFails(); if (confirmed(data.user)) { setLoading(true); location.replace(GO); } else showMail(email); }
         }
       }
     }
@@ -327,21 +363,41 @@ $('chk').onclick = async () => {
 };
 $('out').onclick = async () => { pending = null; await sb.auth.signOut(); $('vMail').hidden = true; $('vForm').hidden = false; mode('in'); };
 
-/* ---- session watching ---- */
+/* ---- session watching & page entry animation ---- */
+const setLoading = (on, txt = '') => {
+  const el = $('loading');
+  if (!el) return;
+  if ($('loadMsg')) $('loadMsg').textContent = txt;
+  el.classList.toggle('on', !!on);
+};
+const tEntry = Date.now();
+const finishEntryLoading = () => {
+  const elapsed = Date.now() - tEntry;
+  const wait = Math.max(0, 680 - elapsed);
+  setTimeout(() => setLoading(false), wait);
+};
+addEventListener('pageshow', () => setTimeout(() => setLoading(false), 400));
+
 sb.auth.onAuthStateChange((ev, session) => {
-  if (ev === 'PASSWORD_RECOVERY') return showRecovery();
+  if (ev === 'PASSWORD_RECOVERY') { finishEntryLoading(); return showRecovery(); }
   if (recovery || signingUp) return;
-  if (ev === 'SIGNED_IN' && session && confirmed(session.user)) location.replace(GO);
+  if (ev === 'SIGNED_IN' && session && confirmed(session.user)) {
+    setLoading(true);
+    location.replace(GO);
+  }
 });
 (async () => {
   try {
     const savedDev = JSON.parse(localStorage.getItem('mf_dev_session') || 'null');
     if (savedDev && DEV_IDENTITIES[savedDev.code]) { location.replace(GO); return; }
   } catch (e) {}
-  const { data } = await sb.auth.getSession();
-  const hash = location.hash || '';
-  if (hash.includes('type=recovery')) return;
-  if (data.session && confirmed(data.session.user)) location.replace(GO);
+  try {
+    const { data } = await sb.auth.getSession();
+    const hash = location.hash || '';
+    if (hash.includes('type=recovery')) { finishEntryLoading(); return; }
+    if (data.session && confirmed(data.session.user)) { location.replace(GO); return; }
+  } catch (e) {}
+  finishEntryLoading();
 })();
 if (new URLSearchParams(location.search).get('dev') === '1') mode('dev');
 else mode('in');
@@ -362,7 +418,7 @@ else mode('in');
 </script>
 <style>/* Palette: cream #FEF3E2 · amber #F4AE52 · burnt orange #D4621A · dark brown #2A1A0E */
 :root[data-theme="dark"]{--bg:#2A1A0E;--card:#38251A;--inp:#21130A;--line:rgba(254,243,226,.16);--tx:#FEF3E2;--mu:#D2BFA5;--or:#F4AE52;--yl:#D4621A;--ort:#E8803A;--ylt:#F4AE52;--onp:#2A1A0E;--bad:#FF9A78;color-scheme:dark}
-:root[data-theme="light"]{--bg:#FEF3E2;--card:#FFF9F1;--inp:#FFFFFF;--line:rgba(42,26,14,.16);--tx:#2A1A0E;--mu:#6B5443;--or:#F4AE52;--yl:#D4621A;--ort:#A94A10;--ylt:#8A5A12;--onp:#2A1A0E;--bad:#FF9A78;color-scheme:light}
+:root[data-theme="light"]{--bg:#FEF3E2;--card:#FFF9F1;--inp:#FFFFFF;--line:rgba(42,26,14,.16);--tx:#2A1A0E;--mu:#6B5443;--or:#F4AE52;--yl:#D4621A;--ort:#A94A10;--ylt:#8A5A12;--onp:#2A1A0E;--bad:#B3261E;color-scheme:light}
 html{background:var(--bg)}
 .tswap,.tswap *{transition:background-color .5s ease,color .5s ease,border-color .5s ease,fill .5s ease,stroke .5s ease,box-shadow .5s ease!important}
 
